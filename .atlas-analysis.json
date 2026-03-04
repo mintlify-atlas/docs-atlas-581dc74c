@@ -1,0 +1,223 @@
+{
+  "projectType": "api-service",
+  "projectName": "GOWA - Go WhatsApp Web Multi-Device API",
+  "projectDescription": "WhatsApp REST API with multi-account support, webhooks, MCP integration, and Chatwoot CRM connectivity built in Go.",
+  "theme": "sequoia",
+  "primaryColor": "#94cb04",
+  "lightColor": "#545454",
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/device-management",
+              "concepts/authentication",
+              "concepts/multi-device",
+              "concepts/webhooks"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/sending-messages",
+              "guides/receiving-messages",
+              "guides/media-handling",
+              "guides/group-management",
+              "guides/configuration"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/webhooks",
+              "integrations/chatwoot",
+              "integrations/mcp",
+              "integrations/n8n"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/docker",
+              "deployment/binary",
+              "deployment/docker-compose",
+              "deployment/environment-variables"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api/overview",
+              "api/authentication",
+              "api/device-scoping",
+              "api/error-handling"
+            ]
+          },
+          {
+            "group": "Device Management",
+            "pages": [
+              "api/devices/list",
+              "api/devices/add",
+              "api/devices/get",
+              "api/devices/remove",
+              "api/devices/login",
+              "api/devices/logout"
+            ]
+          },
+          {
+            "group": "Connection",
+            "pages": [
+              "api/app/login",
+              "api/app/login-code",
+              "api/app/logout",
+              "api/app/status"
+            ]
+          },
+          {
+            "group": "User",
+            "pages": [
+              "api/user/info",
+              "api/user/avatar",
+              "api/user/contacts",
+              "api/user/groups",
+              "api/user/privacy"
+            ]
+          },
+          {
+            "group": "Messaging",
+            "pages": [
+              "api/send/text",
+              "api/send/image",
+              "api/send/audio",
+              "api/send/video",
+              "api/send/file",
+              "api/send/sticker",
+              "api/send/contact",
+              "api/send/link",
+              "api/send/location",
+              "api/send/poll"
+            ]
+          },
+          {
+            "group": "Message Operations",
+            "pages": [
+              "api/message/revoke",
+              "api/message/react",
+              "api/message/delete",
+              "api/message/edit",
+              "api/message/read",
+              "api/message/download"
+            ]
+          },
+          {
+            "group": "Chats",
+            "pages": [
+              "api/chat/list",
+              "api/chat/messages",
+              "api/chat/archive",
+              "api/chat/pin",
+              "api/chat/disappearing"
+            ]
+          },
+          {
+            "group": "Groups",
+            "pages": [
+              "api/group/create",
+              "api/group/info",
+              "api/group/join",
+              "api/group/leave",
+              "api/group/participants",
+              "api/group/settings",
+              "api/group/invite-link"
+            ]
+          },
+          {
+            "group": "Newsletters",
+            "pages": [
+              "api/newsletter/list",
+              "api/newsletter/unfollow"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "MCP Tools",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "mcp/introduction",
+              "mcp/setup",
+              "mcp/configuration"
+            ]
+          },
+          {
+            "group": "Available Tools",
+            "pages": [
+              "mcp/tools/connection",
+              "mcp/tools/messaging",
+              "mcp/tools/contacts",
+              "mcp/tools/groups"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Multi-device WhatsApp support with independent device management",
+    "Comprehensive REST API with OpenAPI specification",
+    "MCP (Model Context Protocol) server for AI agent integration",
+    "Webhook system with event filtering and HMAC security",
+    "Chatwoot CRM integration for customer support",
+    "Media handling (images, audio, video, stickers) with auto-compression",
+    "Group management with participant controls",
+    "Auto-reply, auto-read, and auto-download capabilities",
+    "Docker and binary deployment options",
+    "Basic authentication and subpath deployment support"
+  ],
+  "publicApiSurface": [
+    "GET /devices - List all registered devices",
+    "POST /devices - Add new device",
+    "GET /devices/:device_id/login - Login with QR code",
+    "POST /devices/:device_id/login/code - Login with pairing code",
+    "POST /send/message - Send text message",
+    "POST /send/image - Send image with compression",
+    "POST /send/sticker - Send sticker (auto WebP conversion)",
+    "POST /send/audio - Send audio message",
+    "POST /send/video - Send video with compression",
+    "POST /send/file - Send document",
+    "POST /send/contact - Send contact card",
+    "POST /send/location - Send GPS location",
+    "POST /send/poll - Send poll/vote",
+    "GET /user/info - Get user profile",
+    "GET /user/my/contacts - List contacts",
+    "GET /user/my/groups - List groups (max 500)",
+    "POST /group/create - Create new group",
+    "POST /group/participants - Manage group members",
+    "GET /chats - List chat conversations",
+    "GET /chat/:chat_jid/messages - Get chat messages",
+    "POST /message/:message_id/revoke - Delete message",
+    "POST /message/:message_id/reaction - React with emoji",
+    "GET /message/:message_id/download - Download media",
+    "Webhook events: message, message.ack, group.participants, newsletter.message, call.offer",
+    "MCP tools: whatsapp_send_text, whatsapp_login_qr, whatsapp_group_create, whatsapp_list_contacts"
+  ]
+}
