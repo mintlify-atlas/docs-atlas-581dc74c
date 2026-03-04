@@ -1,0 +1,86 @@
+---
+title: Introduction to MCP
+description: Learn about the Model Context Protocol (MCP) support in GOWA WhatsApp API
+---
+
+## What is MCP?
+
+The Model Context Protocol (MCP) is a standardized protocol that allows AI agents and tools to interact with services through a uniform interface. GOWA WhatsApp API implements MCP Server support, enabling AI assistants like Claude, Cursor, and other MCP-enabled tools to interact with WhatsApp programmatically.
+
+## Why Use MCP?
+
+MCP provides several advantages over traditional REST API integration:
+
+### Standardized Protocol
+- **Uniform Interface**: AI tools can discover and use WhatsApp tools without custom integration code
+- **Type Safety**: Tool parameters are strongly typed with built-in validation
+- **Self-Documenting**: Tools include descriptions and parameter hints
+
+### AI-Native Design
+- **Optimized for Agents**: Purpose-built for AI assistants to understand and use effectively
+- **Structured Responses**: Returns data in formats optimized for AI consumption
+- **Contextual Metadata**: Includes hints for read-only, destructive, and idempotent operations
+
+### Real-Time Communication
+- **Server-Sent Events (SSE)**: Persistent connection for real-time updates
+- **Bidirectional**: AI agents can call tools and receive streaming responses
+- **Low Latency**: Direct communication without polling
+
+## MCP vs REST Mode
+
+| Feature | MCP Mode | REST Mode |
+|---------|----------|------------|
+| **Target Audience** | AI agents and assistants | Human developers, web apps |
+| **Transport** | SSE (Server-Sent Events) | HTTP/HTTPS |
+| **Discovery** | Automatic via MCP protocol | Manual via OpenAPI spec |
+| **Authentication** | Connection-based | Basic Auth, API keys |
+| **Interface** | Tool-based (function calls) | Endpoint-based (HTTP routes) |
+| **Response Format** | Structured + fallback text | JSON |
+| **Web UI** | Not available | Full web interface |
+| **Use Case** | Automation via AI | Direct API integration |
+
+<Note>
+**Important Limitation**: You can only run GOWA in **one mode at a time** — either MCP or REST. This is a limitation of the underlying `whatsmeow` library. To switch modes, stop the server and restart with the desired mode.
+</Note>
+
+## MCP Server Capabilities
+
+The GOWA MCP server provides:
+
+- **Tool Capabilities**: 40+ WhatsApp tools across connection, messaging, contacts, and groups
+- **Resource Capabilities**: Access to chats, messages, and contacts as resources
+- **Type Safety**: All parameters validated with clear error messages
+- **Operation Hints**: Tools marked as read-only, destructive, or idempotent
+
+## Available Tool Categories
+
+The MCP server organizes tools into four main categories:
+
+### Connection Management
+Tools for managing WhatsApp connection state, login, and logout.
+
+### Messaging & Communication  
+Send text messages, images, stickers, contacts, locations, and links.
+
+### Contacts & Chats
+Query contacts, list chats, retrieve messages, and download media.
+
+### Group Management
+Create groups, manage participants, configure settings, and handle join requests.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Setup" icon="rocket" href="/mcp/setup">
+    Learn how to run the MCP server and connect from AI tools
+  </Card>
+  <Card title="Configuration" icon="sliders" href="/mcp/configuration">
+    Configure MCP in Cursor, Claude Desktop, and other clients
+  </Card>
+  <Card title="Connection Tools" icon="plug" href="/mcp/tools/connection">
+    Explore connection management tools
+  </Card>
+  <Card title="Messaging Tools" icon="message" href="/mcp/tools/messaging">
+    Learn about messaging and communication tools
+  </Card>
+</CardGroup>

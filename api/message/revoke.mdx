@@ -1,0 +1,72 @@
+---
+title: 'Revoke Message'
+openapi: 'POST /message/{message_id}/revoke'
+---
+
+Revoke (delete for everyone) a message that you have sent. This will remove the message from both your chat and the recipient's chat.
+
+<Note>
+This operation only works for messages you have sent. You cannot revoke messages sent by others.
+</Note>
+
+## Request
+
+<ParamField path="message_id" type="string" required>
+  The unique identifier of the message to revoke
+</ParamField>
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+<ParamField body="phone" type="string" required>
+  Phone number with country code and WhatsApp suffix
+  
+  Example: `6289685024051@s.whatsapp.net`
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code (e.g., `SUCCESS`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message describing the result
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="message_id" type="string">
+    The ID of the revoked message
+  </ResponseField>
+  
+  <ResponseField name="status" type="string">
+    Status of the revoke operation
+  </ResponseField>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X POST \
+  'https://your-api-domain.com/message/3EB0B430B6F8F1D0E053AC120E0A9E5C/revoke' \
+  -H 'Content-Type: application/json' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password' \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": {
+    "message_id": "3EB0B430B6F8F1D0E053AC120E0A9E5C",
+    "status": "Message revoked successfully"
+  }
+}
+```
+</ResponseExample>

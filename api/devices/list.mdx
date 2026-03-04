@@ -1,0 +1,204 @@
+---
+title: "List Devices"
+api: "GET /devices"
+description: "Returns all registered devices with their connection status"
+---
+
+Returns all registered devices with their connection status, including device IDs, phone numbers, display names, and login states.
+
+## Endpoint
+
+```
+GET /devices
+```
+
+## Authentication
+
+This endpoint requires HTTP Basic Authentication.
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code
+  <Expandable title="example">
+    ```
+    SUCCESS
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message
+  <Expandable title="example">
+    ```
+    List devices
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="status" type="integer">
+  HTTP status code
+  <Expandable title="example">
+    ```
+    200
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="results" type="array">
+  Array of device information objects
+  <Expandable title="properties">
+    <ResponseField name="id" type="string">
+      Device identifier
+      <Expandable title="example">
+        ```
+        my-device-id
+        ```
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="phone_number" type="string">
+      Phone number associated with the device
+      <Expandable title="example">
+        ```
+        628123456789
+        ```
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="display_name" type="string">
+      Display name of the device user
+      <Expandable title="example">
+        ```
+        John Doe
+        ```
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="state" type="string">
+      Connection state of the device
+      <Expandable title="values">
+        - `disconnected` - Device is not connected
+        - `connected` - Device is connected but not logged in
+        - `logged_in` - Device is connected and logged in
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="jid" type="string">
+      WhatsApp JID (Jabber ID) of the device
+      <Expandable title="example">
+        ```
+        628123456789@s.whatsapp.net
+        ```
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="created_at" type="string">
+      Device creation timestamp in ISO 8601 format
+      <Expandable title="example">
+        ```
+        2024-01-01T00:00:00Z
+        ```
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "List devices",
+  "status": 200,
+  "results": [
+    {
+      "id": "my-device-id",
+      "phone_number": "628123456789",
+      "display_name": "John Doe",
+      "state": "logged_in",
+      "jid": "628123456789@s.whatsapp.net",
+      "created_at": "2024-01-01T00:00:00Z"
+    },
+    {
+      "id": "device-2",
+      "phone_number": "628987654321",
+      "display_name": "Jane Smith",
+      "state": "connected",
+      "jid": "628987654321@s.whatsapp.net",
+      "created_at": "2024-01-02T10:30:00Z"
+    }
+  ]
+}
+```
+
+## Error Responses
+
+<ResponseField name="500" type="object">
+  Internal Server Error
+  <Expandable title="response">
+    ```json
+    {
+      "code": "INTERNAL_SERVER_ERROR",
+      "message": "Error fetching devices",
+      "results": null
+    }
+    ```
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X GET http://localhost:3000/devices \
+  -u username:password
+```
+
+```javascript JavaScript
+const response = await fetch('http://localhost:3000/devices', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Basic ' + btoa('username:password')
+  }
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+from requests.auth import HTTPBasicAuth
+
+response = requests.get(
+    'http://localhost:3000/devices',
+    auth=HTTPBasicAuth('username', 'password')
+)
+
+print(response.json())
+```
+
+```go Go
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "io"
+    "net/http"
+)
+
+func main() {
+    client := &http.Client{}
+    req, _ := http.NewRequest("GET", "http://localhost:3000/devices", nil)
+    req.SetBasicAuth("username", "password")
+    
+    resp, _ := client.Do(req)
+    defer resp.Body.Close()
+    
+    body, _ := io.ReadAll(resp.Body)
+    fmt.Println(string(body))
+}
+```
+</CodeGroup>

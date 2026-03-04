@@ -1,0 +1,205 @@
+---
+title: 'Get User Info'
+api: 'GET /user/info'
+description: 'Retrieve detailed information about a WhatsApp user'
+---
+
+Get comprehensive information about a WhatsApp user including their verified name, status, profile picture ID, and connected devices.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Basic authentication credentials (username:password in base64)
+</ParamField>
+
+## Headers
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+## Query Parameters
+
+<ParamField query="phone" type="string" required>
+  Phone number with WhatsApp suffix format
+  
+  **Example:** `6289685028129@s.whatsapp.net`
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code indicating success or failure
+  
+  **Example:** `SUCCESS`
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message
+  
+  **Example:** `Success`
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  User information data
+  
+  <ResponseField name="verified_name" type="string">
+    User's verified name on WhatsApp
+    
+    **Example:** `Aldino Kemal`
+  </ResponseField>
+  
+  <ResponseField name="status" type="string">
+    User's WhatsApp status/about text
+    
+    **Example:** `Hello World`
+  </ResponseField>
+  
+  <ResponseField name="picture_id" type="string">
+    Unique identifier for the user's profile picture
+    
+    **Example:** `1651459152`
+  </ResponseField>
+  
+  <ResponseField name="devices" type="array">
+    List of devices linked to this WhatsApp account
+    
+    <ResponseField name="User" type="string">
+      User's phone number
+      
+      **Example:** `6289685021291`
+    </ResponseField>
+    
+    <ResponseField name="Agent" type="integer">
+      Agent identifier
+      
+      **Example:** `0`
+    </ResponseField>
+    
+    <ResponseField name="Device" type="string">
+      Device type
+      
+      **Example:** `UNKNOWN`
+    </ResponseField>
+    
+    <ResponseField name="Server" type="string">
+      WhatsApp server address
+      
+      **Example:** `s.whatsapp.net`
+    </ResponseField>
+    
+    <ResponseField name="AD" type="boolean">
+      Whether this is an AD (Authenticated Device)
+      
+      **Example:** `true`
+    </ResponseField>
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET 'http://localhost:3000/user/info?phone=6289685028129@s.whatsapp.net' \
+  -u 'username:password' \
+  -H 'X-Device-Id: my-device-id'
+```
+
+```javascript JavaScript
+const phone = '6289685028129@s.whatsapp.net';
+
+const response = await fetch(
+  `http://localhost:3000/user/info?phone=${encodeURIComponent(phone)}`,
+  {
+    method: 'GET',
+    headers: {
+      'Authorization': 'Basic ' + btoa('username:password'),
+      'X-Device-Id': 'my-device-id'
+    }
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+import base64
+from urllib.parse import quote
+
+username = 'username'
+password = 'password'
+credentials = base64.b64encode(f'{username}:{password}'.encode()).decode()
+phone = '6289685028129@s.whatsapp.net'
+
+response = requests.get(
+    f'http://localhost:3000/user/info?phone={quote(phone)}',
+    headers={
+        'Authorization': f'Basic {credentials}',
+        'X-Device-Id': 'my-device-id'
+    }
+)
+
+print(response.json())
+```
+
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": {
+    "verified_name": "Aldino Kemal",
+    "status": "Hello World",
+    "picture_id": "1651459152",
+    "devices": [
+      {
+        "User": "6289685021291",
+        "Agent": 0,
+        "Device": "UNKNOWN",
+        "Server": "s.whatsapp.net",
+        "AD": true
+      }
+    ]
+  }
+}
+```
+
+## Error Responses
+
+<ResponseField name="400" type="object">
+  Bad Request
+  
+  ```json
+  {
+    "code": "400",
+    "message": "phone field cannot be blank",
+    "results": null
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500" type="object">
+  Internal Server Error
+  
+  ```json
+  {
+    "code": "INTERNAL_SERVER_ERROR",
+    "message": "Failed to fetch user info",
+    "results": null
+  }
+  ```
+</ResponseField>
+
+## Usage Notes
+
+- The phone parameter must include the WhatsApp suffix `@s.whatsapp.net`
+- For group JIDs, use `@g.us` suffix instead
+- The `picture_id` can be used to check if a user has changed their profile picture
+- The `devices` array shows all linked devices for the user account
+- Some fields may be empty if the user has privacy settings enabled

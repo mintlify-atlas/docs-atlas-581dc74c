@@ -1,0 +1,411 @@
+---
+title: Messaging & Communication Tools
+description: MCP tools for sending messages, images, stickers, contacts, links, and locations
+---
+
+## Overview
+
+Messaging tools allow AI agents to send various types of content to WhatsApp contacts and groups. All messaging tools support forwarding and reply features.
+
+<Note>
+Before using messaging tools, ensure you are [authenticated](/mcp/tools/connection) and connected to WhatsApp.
+</Note>
+
+## whatsapp_send_text
+
+Send a text message to a WhatsApp contact or group. Supports ghost mentions (mention users without showing @phone in message text).
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `phone` | string | Yes | Phone number or group ID (e.g., `628123456789` or `120363123456@g.us`) |
+| `message` | string | Yes | The text message to send |
+| `is_forwarded` | boolean | No | Whether this message is being forwarded (default: `false`) |
+| `reply_message_id` | string | No | Message ID to reply to (optional) |
+| `mentions` | array | No | Phone numbers or JIDs to mention (ghost mentions). Use `"@everyone"` to mention all group participants |
+
+### Ghost Mentions
+
+Ghost mentions allow you to notify users **without** showing `@phone` in the message text:
+
+```json
+{
+  "phone": "120363123456@g.us",
+  "message": "Hello everyone, please read this announcement",
+  "mentions": ["628123456789", "628987654321"]
+}
+```
+
+The message displays normally, but the specified users receive a mention notification.
+
+### Mention Everyone
+
+Use the special keyword `@everyone` to mention all group participants:
+
+```json
+{
+  "phone": "120363123456@g.us",
+  "message": "Important: Meeting at 3 PM",
+  "mentions": ["@everyone"]
+}
+```
+
+### Returns
+
+```json
+{
+  "message_id": "3EB0C767E8D4B2A9E4C3"
+}
+```
+
+Fallback text: `"Message sent successfully with ID 3EB0C767E8D4B2A9E4C3"`
+
+### Example Usage
+
+<Tabs>
+  <Tab title="Simple Message">
+    ```
+    Send a WhatsApp message to 628123456789 saying "Hello from AI!"
+    ```
+  </Tab>
+  <Tab title="Reply to Message">
+    ```
+    Reply to message 3EB0C767E8D4B2A9E4C3 in chat 628123456789 with "Thanks for the update"
+    ```
+  </Tab>
+  <Tab title="Mention Everyone">
+    ```
+    Send a message to group 120363123456@g.us saying "Meeting starts now" and mention everyone
+    ```
+  </Tab>
+</Tabs>
+
+### Implementation Reference
+
+Source: `src/ui/mcp/send.go:33-109`
+
+## whatsapp_send_contact
+
+Send a contact card to a WhatsApp contact or group.
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `phone` | string | Yes | Recipient phone number or group ID |
+| `contact_name` | string | Yes | Name of the contact to send |
+| `contact_phone` | string | Yes | Phone number of the contact to send |
+| `is_forwarded` | boolean | No | Whether this is a forwarded contact (default: `false`) |
+
+### Returns
+
+```json
+{
+  "message_id": "3EB0C767E8D4B2A9E4C4"
+}
+```
+
+Fallback text: `"Contact sent successfully with ID 3EB0C767E8D4B2A9E4C4"`
+
+### Example Usage
+
+```
+Send contact card for "John Doe" (+1234567890) to 628123456789
+```
+
+### Implementation Reference
+
+Source: `src/ui/mcp/send.go:111-174`
+
+## whatsapp_send_link
+
+Send a link with caption to a WhatsApp contact or group.
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `phone` | string | Yes | Recipient phone number or group ID |
+| `link` | string | Yes | URL link to send |
+| `caption` | string | Yes | Caption or description for the link |
+| `is_forwarded` | boolean | No | Whether this is a forwarded link (default: `false`) |
+
+### Returns
+
+```json
+{
+  "message_id": "3EB0C767E8D4B2A9E4C5"
+}
+```
+
+Fallback text: `"Link sent successfully with ID 3EB0C767E8D4B2A9E4C5"`
+
+### Example Usage
+
+<Tabs>
+  <Tab title="AI Assistant">
+    ```
+    Send link https://example.com to 628123456789 with caption "Check this out!"
+    ```
+  </Tab>
+  <Tab title="Direct MCP">
+    ```json
+    {
+      "name": "whatsapp_send_link",
+      "arguments": {
+        "phone": "628123456789",
+        "link": "https://example.com",
+        "caption": "Interesting article"
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Implementation Reference
+
+Source: `src/ui/mcp/send.go:176-239`
+
+## whatsapp_send_location
+
+Send location coordinates to a WhatsApp contact or group.
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `phone` | string | Yes | Recipient phone number or group ID |
+| `latitude` | string | Yes | Latitude coordinate (as string, e.g., `"-6.200000"`) |
+| `longitude` | string | Yes | Longitude coordinate (as string, e.g., `"106.816666"`) |
+| `is_forwarded` | boolean | No | Whether this is a forwarded location (default: `false`) |
+
+### Returns
+
+```json
+{
+  "message_id": "3EB0C767E8D4B2A9E4C6"
+}
+```
+
+Fallback text: `"Location sent successfully with ID 3EB0C767E8D4B2A9E4C6"`
+
+### Example Usage
+
+```
+Send location -6.200000, 106.816666 to 628123456789
+```
+
+<Note>
+Coordinates must be provided as **strings**, not numbers. This is a quirk of the underlying WhatsApp protocol implementation.
+</Note>
+
+### Implementation Reference
+
+Source: `src/ui/mcp/send.go:241-304`
+
+## whatsapp_send_image
+
+Send an image to a WhatsApp contact or group.
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `phone` | string | Yes | Recipient phone number or group ID |
+| `image_url` | string | Yes | URL of the image to send (HTTPS recommended) |
+| `caption` | string | No | Caption or description for the image |
+| `view_once` | boolean | No | Whether this image should be viewed only once (default: `false`) |
+| `compress` | boolean | No | Whether to compress the image (default: `true`) |
+| `is_forwarded` | boolean | No | Whether this is a forwarded image (default: `false`) |
+
+### Image Compression
+
+When `compress: true` (default):
+- Images are compressed to reduce file size
+- Quality is optimized for WhatsApp delivery
+- Faster upload and download for recipients
+
+When `compress: false`:
+- Original image quality is preserved
+- Larger file size
+- May take longer to send/receive
+
+### View Once
+
+When `view_once: true`:
+- Image is deleted from chat after recipient views it
+- Cannot be saved, forwarded, or screenshot (WhatsApp enforces this)
+- Useful for sensitive images
+
+### Returns
+
+```json
+{
+  "message_id": "3EB0C767E8D4B2A9E4C7"
+}
+```
+
+Fallback text: `"Image sent successfully with ID 3EB0C767E8D4B2A9E4C7"`
+
+### Example Usage
+
+<Tabs>
+  <Tab title="Simple Image">
+    ```
+    Send image https://example.com/photo.jpg to 628123456789
+    ```
+  </Tab>
+  <Tab title="With Caption">
+    ```
+    Send image https://example.com/photo.jpg to 628123456789 with caption "Beautiful sunset"
+    ```
+  </Tab>
+  <Tab title="View Once">
+    ```
+    Send view-once image https://example.com/sensitive.jpg to 628123456789
+    ```
+  </Tab>
+</Tabs>
+
+### Implementation Reference
+
+Source: `src/ui/mcp/send.go:306-389`
+
+## whatsapp_send_sticker
+
+Send a sticker to a WhatsApp contact or group. Images are automatically converted to WebP sticker format.
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `phone` | string | Yes | Recipient phone number or group ID |
+| `sticker_url` | string | Yes | URL of the image to convert to sticker |
+| `is_forwarded` | boolean | No | Whether this is a forwarded sticker |
+
+### Supported Image Formats
+
+GOWA automatically converts the following formats to WebP stickers:
+- **JPG / JPEG**
+- **PNG** (transparency preserved)
+- **WebP** (static)
+- **GIF** (converted to static WebP)
+
+### Animated Stickers
+
+Animated WebP stickers are supported but must meet WhatsApp's requirements:
+- **Exactly 512x512 pixels**
+- **Under 500KB file size**
+- **Maximum 10 seconds duration**
+
+<Warning>
+If your animated sticker doesn't meet these requirements, WhatsApp will reject it. Use a tool like [ezgif.com](https://ezgif.com/resize) to resize before sending.
+</Warning>
+
+### Returns
+
+```json
+{
+  "message_id": "3EB0C767E8D4B2A9E4C8"
+}
+```
+
+Fallback text: `"Sticker sent successfully with ID 3EB0C767E8D4B2A9E4C8"`
+
+### Example Usage
+
+<Tabs>
+  <Tab title="From Image URL">
+    ```
+    Send sticker from https://example.com/image.png to 628123456789
+    ```
+  </Tab>
+  <Tab title="Animated Sticker">
+    ```
+    Send animated sticker from https://example.com/animated.webp to 628123456789
+    ```
+  </Tab>
+</Tabs>
+
+### Conversion Process
+
+1. Download image from `sticker_url`
+2. Resize to 512x512 pixels
+3. Convert to WebP format
+4. Send as WhatsApp sticker
+
+### Implementation Reference
+
+Source: `src/ui/mcp/send.go:391-444`
+
+## Common Parameters
+
+### Phone Number Format
+
+All messaging tools accept `phone` parameter in these formats:
+
+| Format | Example | Description |
+|--------|---------|-------------|
+| Raw number | `628123456789` | Preferred for individual chats |
+| JID | `628123456789@s.whatsapp.net` | WhatsApp JID format |
+| Group JID | `120363123456@g.us` | Group chat identifier |
+
+<Tip>
+You don't need to include the `@s.whatsapp.net` suffix for individual numbers. GOWA will add it automatically.
+</Tip>
+
+### Forward Flag
+
+All messaging tools support the `is_forwarded` boolean:
+
+```json
+{
+  "is_forwarded": true
+}
+```
+
+When `true`, the message displays with a "Forwarded" label in WhatsApp.
+
+## Error Handling
+
+### Common Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `phone must be a string` | Missing or invalid phone parameter | Provide valid phone number |
+| `message must be a string` | Missing or invalid message parameter | Provide message text |
+| `not logged in` | WhatsApp session not authenticated | Login using `whatsapp_login_qr` |
+| `recipient not found` | Invalid phone number or group ID | Verify the phone number exists |
+| `media download failed` | Invalid URL or network error | Check URL is accessible |
+
+## Best Practices
+
+1. **Check connection first**: Call `whatsapp_connection_status` before sending messages
+2. **Validate phone numbers**: Ensure phone numbers are in correct format
+3. **Use ghost mentions**: For group notifications, use `mentions` array instead of @phone in text
+4. **Compress large images**: Enable compression for faster delivery
+5. **Handle errors gracefully**: Implement retry logic for network failures
+6. **Respect rate limits**: WhatsApp may rate-limit excessive messaging
+
+## Rate Limiting
+
+<Warning>
+WhatsApp enforces rate limits on message sending:
+- **Individual chats**: ~20 messages per minute
+- **Group chats**: ~10 messages per minute
+- **Media**: Slower rate limits apply
+
+Exceeding these limits may result in temporary bans. Implement delays between messages for bulk operations.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Contacts & Chats" icon="address-book" href="/mcp/tools/contacts">
+    Query contacts, list chats, and download media
+  </Card>
+  <Card title="Group Management" icon="users" href="/mcp/tools/groups">
+    Create and manage WhatsApp groups
+  </Card>
+</CardGroup>

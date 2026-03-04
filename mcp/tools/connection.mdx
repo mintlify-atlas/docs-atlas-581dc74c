@@ -1,0 +1,345 @@
+---
+title: Connection Management Tools
+description: MCP tools for managing WhatsApp connection, login, and logout
+---
+
+## Overview
+
+Connection management tools handle WhatsApp authentication, session management, and connection status. These are typically the first tools you'll use when setting up the MCP server.
+
+<Note>
+All connection tools operate on the **default device** (first registered device in multi-device setups).
+</Note>
+
+## whatsapp_connection_status
+
+Check whether the WhatsApp client is connected and logged in.
+
+### Parameters
+
+None. This tool takes no arguments.
+
+### Returns
+
+```json
+{
+  "is_connected": true,
+  "is_logged_in": true,
+  "device_id": "628123456789@s.whatsapp.net"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `is_connected` | boolean | Whether the WebSocket connection to WhatsApp is active |
+| `is_logged_in` | boolean | Whether the device is authenticated with WhatsApp |
+| `device_id` | string | The WhatsApp JID of the authenticated device |
+
+### Hints
+
+- **Read-only**: `true` (does not modify state)
+- **Destructive**: `false`
+- **Idempotent**: `true` (safe to call repeatedly)
+
+### Example Usage
+
+<Tabs>
+  <Tab title="Cursor">
+    ```
+    Check WhatsApp connection status
+    ```
+  </Tab>
+  <Tab title="Claude">
+    ```
+    What's the current WhatsApp connection status?
+    ```
+  </Tab>
+  <Tab title="Direct MCP">
+    ```json
+    {
+      "method": "tools/call",
+      "params": {
+        "name": "whatsapp_connection_status",
+        "arguments": {}
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Implementation Reference
+
+Source: `src/ui/mcp/app.go:31-61`
+
+## whatsapp_login_qr
+
+Initiate QR code based login flow with image output.
+
+### Parameters
+
+None.
+
+### Returns
+
+```json
+{
+  "device_id": "628123456789@s.whatsapp.net",
+  "qr_image_path": "/app/storages/qr-628123456789.png",
+  "qr_code": "2@abc123...",
+  "expires_in": 60
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `device_id` | string | Device that will be authenticated |
+| `qr_image_path` | string | Local filesystem path to QR code PNG |
+| `qr_code` | string | Raw QR code data |
+| `expires_in` | integer | Seconds until QR code expires |
+
+### Image Response
+
+The tool returns a **base64-encoded PNG image** in MCP image format, allowing AI clients to display the QR code directly.
+
+### Hints
+
+- **Read-only**: `false`
+- **Destructive**: `true` (starts new login session)
+- **Idempotent**: `false` (generates new QR each time)
+
+### Usage
+
+<Steps>
+  <Step title="Call the tool">
+    Ask your AI assistant:
+    ```
+    Generate WhatsApp login QR code
+    ```
+  </Step>
+  <Step title="Display QR code">
+    The AI will show the QR code image (if supported by the client).
+  </Step>
+  <Step title="Scan with WhatsApp mobile">
+    Open WhatsApp on your phone > Settings > Linked Devices > Link a Device > Scan the QR code.
+  </Step>
+  <Step title="Wait for authentication">
+    The device will be authenticated automatically once scanned.
+  </Step>
+</Steps>
+
+<Warning>
+QR codes expire after ~60 seconds. If expired, call the tool again to generate a new code.
+</Warning>
+
+### Implementation Reference
+
+Source: `src/ui/mcp/app.go:64-102`
+
+## whatsapp_login_with_code
+
+Generate a pairing code for multi-device login using a phone number.
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `phone` | string | Yes | Phone number in international format (e.g., `+628123456789`) |
+
+### Returns
+
+```json
+{
+  "device_id": "628123456789@s.whatsapp.net",
+  "phone": "+628123456789",
+  "pair_code": "ABCD-1234"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `device_id` | string | Device that will be authenticated |
+| `phone` | string | Phone number used for pairing |
+| `pair_code` | string | 8-character pairing code (format: XXXX-XXXX) |
+
+### Hints
+
+- **Read-only**: `false`
+- **Destructive**: `true` (starts new login session)
+- **Idempotent**: `false` (generates new code each time)
+
+### Usage
+
+<Steps>
+  <Step title="Generate pairing code">
+    ```
+    Generate WhatsApp pairing code for +628123456789
+    ```
+  </Step>
+  <Step title="Enter code in WhatsApp mobile">
+    1. Open WhatsApp on your phone
+    2. Go to Settings > Linked Devices
+    3. Tap "Link a Device"
+    4. Tap "Link with phone number instead"
+    5. Enter the 8-character pairing code
+  </Step>
+  <Step title="Confirm authentication">
+    The device will be linked automatically.
+  </Step>
+</Steps>
+
+### Example
+
+<CodeGroup>
+```json Direct MCP Call
+{
+  "method": "tools/call",
+  "params": {
+    "name": "whatsapp_login_with_code",
+    "arguments": {
+      "phone": "+628123456789"
+    }
+  }
+}
+```
+
+```text AI Assistant
+Generate a WhatsApp pairing code for +1234567890
+```
+</CodeGroup>
+
+### Implementation Reference
+
+Source: `src/ui/mcp/app.go:104-144`
+
+## whatsapp_logout
+
+Sign out the current WhatsApp session and clear stored credentials.
+
+### Parameters
+
+None.
+
+### Returns
+
+```text
+Logged out device 628123456789@s.whatsapp.net successfully
+```
+
+### Hints
+
+- **Read-only**: `false`
+- **Destructive**: `true` (terminates session)
+- **Idempotent**: `false`
+
+### Usage
+
+```
+Logout from WhatsApp
+```
+
+<Warning>
+Logging out will:
+- Terminate the WebSocket connection
+- Delete stored session credentials
+- Unlink the device from WhatsApp servers
+- Require re-authentication to use messaging tools
+</Warning>
+
+### Implementation Reference
+
+Source: `src/ui/mcp/app.go:146-168`
+
+## whatsapp_reconnect
+
+Attempt to reconnect to WhatsApp using the stored session.
+
+### Parameters
+
+None.
+
+### Returns
+
+```text
+Reconnect initiated for 628123456789@s.whatsapp.net
+```
+
+### Hints
+
+- **Read-only**: `false`
+- **Destructive**: `false`
+- **Idempotent**: `true` (safe to call multiple times)
+
+### When to Use
+
+Use this tool when:
+- The connection is dropped (network issues)
+- `whatsapp_connection_status` shows `is_connected: false` but `is_logged_in: true`
+- You want to force a reconnection attempt
+
+### Usage
+
+```
+Reconnect to WhatsApp
+```
+
+<Note>
+Reconnect only works if the device was previously authenticated. If the session has expired, you must use `whatsapp_login_qr` or `whatsapp_login_with_code` to re-authenticate.
+</Note>
+
+### Implementation Reference
+
+Source: `src/ui/mcp/app.go:170-192`
+
+## Device Resolution
+
+### Single Device Setup
+
+If only one device is registered, all connection tools automatically use it:
+
+```go
+func (h *AppHandler) defaultDeviceID() (string, error) {
+    devices, err := h.appService.FetchDevices(context.Background())
+    if len(devices) == 0 {
+        return "", fmt.Errorf("no devices registered")
+    }
+    return devices[0].Device, nil  // First device is default
+}
+```
+
+Source: `src/ui/mcp/app.go:194-203`
+
+### Multi-Device Setup
+
+<Warning>
+The MCP server currently does **not support per-tool device selection**. All tools operate on the first registered device (`devices[0]`). Multi-device support for MCP is planned for a future release.
+</Warning>
+
+## Error Handling
+
+### Common Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `no devices registered` | No authenticated devices | Login using `whatsapp_login_qr` or `whatsapp_login_with_code` |
+| `device manager not initialized` | Server startup issue | Restart the MCP server |
+| `device identification required` | Multi-device ambiguity | Ensure at least one device is registered |
+| `context deadline exceeded` | Network timeout | Check internet connection, retry with `whatsapp_reconnect` |
+
+## Best Practices
+
+1. **Check status first**: Always call `whatsapp_connection_status` before attempting other operations
+2. **Handle QR expiration**: QR codes expire in ~60 seconds; regenerate if login fails
+3. **Use pairing codes for automation**: Pairing codes are easier to integrate into automated workflows
+4. **Reconnect on failure**: If tools fail with connection errors, try `whatsapp_reconnect` before re-authenticating
+5. **Logout when done**: Logout to free server resources if the session is no longer needed
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Messaging Tools" icon="message" href="/mcp/tools/messaging">
+    Send text, images, stickers, and more
+  </Card>
+  <Card title="Contacts & Chats" icon="address-book" href="/mcp/tools/contacts">
+    Query contacts and messages
+  </Card>
+</CardGroup>

@@ -1,0 +1,93 @@
+---
+title: 'Archive/Unarchive Chat'
+openapi: 'POST /chat/{chat_jid}/archive'
+---
+
+Archive or unarchive a chat conversation. Archived chats are hidden from the main chat list but can still receive new messages.
+
+<Info>
+Archived chats will automatically unarchive when a new message is received, unless you have enabled the "Keep chats archived" setting in WhatsApp.
+</Info>
+
+## Request
+
+<ParamField path="chat_jid" type="string" required>
+  Chat JID identifier:
+  - For individual chats: `phone@s.whatsapp.net`
+  - For group chats: `groupid@g.us`
+  
+  Example: `6289685028129@s.whatsapp.net`
+</ParamField>
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+<ParamField body="archived" type="boolean" required>
+  Whether to archive (`true`) or unarchive (`false`) the chat
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="integer">
+  HTTP status code (e.g., `200`)
+</ResponseField>
+
+<ResponseField name="code" type="string">
+  Response code (e.g., `SUCCESS`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message describing the result
+  
+  Example: `Chat archived successfully`
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="status" type="string">
+    Status of the operation
+    
+    Example: `success`
+  </ResponseField>
+  
+  <ResponseField name="message" type="string">
+    Detailed status message
+  </ResponseField>
+  
+  <ResponseField name="chat_jid" type="string">
+    The JID of the affected chat
+  </ResponseField>
+  
+  <ResponseField name="archived" type="boolean">
+    The new archived status
+  </ResponseField>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X POST \
+  'https://your-api-domain.com/chat/6289685028129@s.whatsapp.net/archive' \
+  -H 'Content-Type: application/json' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password' \
+  -d '{
+    "archived": true
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": 200,
+  "code": "SUCCESS",
+  "message": "Chat archived successfully",
+  "results": {
+    "status": "success",
+    "message": "Chat archived successfully",
+    "chat_jid": "6289685028129@s.whatsapp.net",
+    "archived": true
+  }
+}
+```
+</ResponseExample>

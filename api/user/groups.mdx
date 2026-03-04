@@ -1,0 +1,201 @@
+---
+title: 'Get My Groups'
+api: 'GET /user/my/groups'
+description: 'Retrieve the list of WhatsApp groups that the authenticated user has joined'
+---
+
+Get a complete list of all groups that you are a member of, including group details and participants.
+
+<Warning>
+  **Known Limitation:** This endpoint returns a maximum of 500 groups due to a WhatsApp protocol limitation. The underlying whatsmeow library's `GetJoinedGroups()` function sends a single query to WhatsApp servers, which enforces this limit. Users with more than 500 groups will only receive the first 500 groups.
+</Warning>
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Basic authentication credentials (username:password in base64)
+</ParamField>
+
+## Headers
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code indicating success or failure
+  
+  **Example:** `SUCCESS`
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message
+  
+  **Example:** `Success get list groups`
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  Groups data
+  
+  <ResponseField name="data" type="array">
+    Array of group objects
+    
+    <ResponseField name="JID" type="string">
+      Group's WhatsApp JID (identifier)
+      
+      **Example:** `120363025982934543@g.us`
+    </ResponseField>
+    
+    <ResponseField name="OwnerJID" type="string">
+      JID of the group owner
+    </ResponseField>
+    
+    <ResponseField name="Name" type="string">
+      Group name
+      
+      **Example:** `My Awesome Group`
+    </ResponseField>
+    
+    <ResponseField name="NameSetAt" type="string">
+      Timestamp when the group name was set
+    </ResponseField>
+    
+    <ResponseField name="NameSetBy" type="string">
+      JID of the user who set the group name
+    </ResponseField>
+    
+    <ResponseField name="GroupCreated" type="string">
+      Timestamp when the group was created
+    </ResponseField>
+    
+    <ResponseField name="ParticipantVersionID" type="string">
+      Version ID for the participants list
+    </ResponseField>
+    
+    <ResponseField name="Participants" type="array">
+      Array of participant objects
+      
+      <ResponseField name="JID" type="string">
+        Participant's WhatsApp JID
+      </ResponseField>
+      
+      <ResponseField name="IsAdmin" type="boolean">
+        Whether the participant is an admin
+      </ResponseField>
+      
+      <ResponseField name="IsSuperAdmin" type="boolean">
+        Whether the participant is a super admin
+      </ResponseField>
+      
+      <ResponseField name="Error" type="number">
+        Error code if there was an issue
+      </ResponseField>
+    </ResponseField>
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET 'http://localhost:3000/user/my/groups' \
+  -u 'username:password' \
+  -H 'X-Device-Id: my-device-id'
+```
+
+```javascript JavaScript
+const response = await fetch('http://localhost:3000/user/my/groups', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Basic ' + btoa('username:password'),
+    'X-Device-Id': 'my-device-id'
+  }
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+import base64
+
+username = 'username'
+password = 'password'
+credentials = base64.b64encode(f'{username}:{password}'.encode()).decode()
+
+response = requests.get(
+    'http://localhost:3000/user/my/groups',
+    headers={
+        'Authorization': f'Basic {credentials}',
+        'X-Device-Id': 'my-device-id'
+    }
+)
+
+print(response.json())
+```
+
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Success get list groups",
+  "results": {
+    "data": [
+      {
+        "JID": "120363025982934543@g.us",
+        "OwnerJID": "6289685028129@s.whatsapp.net",
+        "Name": "My Awesome Group",
+        "NameSetAt": "2024-01-15T10:30:00Z",
+        "NameSetBy": "6289685028129@s.whatsapp.net",
+        "GroupCreated": "2024-01-10T08:00:00Z",
+        "ParticipantVersionID": "1705315800",
+        "Participants": [
+          {
+            "JID": "6289685028129@s.whatsapp.net",
+            "IsAdmin": true,
+            "IsSuperAdmin": true,
+            "Error": 0
+          },
+          {
+            "JID": "6281234567890@s.whatsapp.net",
+            "IsAdmin": false,
+            "IsSuperAdmin": false,
+            "Error": 0
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## Error Responses
+
+<ResponseField name="500" type="object">
+  Internal Server Error
+  
+  ```json
+  {
+    "code": "INTERNAL_SERVER_ERROR",
+    "message": "Failed to fetch groups",
+    "results": null
+  }
+  ```
+</ResponseField>
+
+## Usage Notes
+
+- Maximum of 500 groups returned due to WhatsApp protocol limitation
+- Group JIDs end with `@g.us` instead of `@s.whatsapp.net`
+- The `Participants` array includes all group members with their roles
+- `IsAdmin` indicates if a participant can manage group settings
+- `IsSuperAdmin` indicates if a participant is the group creator or has elevated permissions
+- Use the `/group/info` endpoint to get more detailed information about a specific group
+- For more details on the limitation, see the [whatsmeow source code](https://github.com/tulir/whatsmeow/blob/main/group.go)

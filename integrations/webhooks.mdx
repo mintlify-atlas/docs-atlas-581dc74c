@@ -1,0 +1,521 @@
+---
+title: 'Webhooks'
+description: 'Configure webhooks to receive real-time WhatsApp events with HMAC security'
+icon: 'webhook'
+---
+
+## Overview
+
+The webhook system sends HTTP POST requests to configured URLs whenever WhatsApp events occur. Each webhook request includes event data in JSON format and security headers for verification.
+
+## Configuration
+
+### Environment Variables
+
+```bash
+# Single webhook URL
+WHATSAPP_WEBHOOK=https://yourapp.com/webhook
+
+# Multiple webhook URLs (comma-separated)
+WHATSAPP_WEBHOOK=https://app1.com/webhook,https://app2.com/webhook
+
+# Webhook secret for HMAC verification
+WHATSAPP_WEBHOOK_SECRET=your-super-secret-key
+```
+
+### Command Line Flags
+
+```bash
+# Single webhook
+./whatsapp rest --webhook="https://yourapp.com/webhook"
+
+# Multiple webhooks
+./whatsapp rest --webhook="https://app1.com/webhook,https://app2.com/webhook"
+
+# Custom secret
+./whatsapp rest --webhook-secret="your-secret-key"
+```
+
+## Event Filtering
+
+You can configure which events are forwarded to your webhook using the `WHATSAPP_WEBHOOK_EVENTS` environment variable or `--webhook-events` CLI flag.
+
+### Available Events
+
+| Event                | Description                                             |
+|----------------------|---------------------------------------------------------|
+| `message`            | Text, media, contact, location, and other message types |
+| `message.reaction`   | Emoji reactions to messages                             |
+| `message.revoked`    | Deleted/revoked messages                                |
+| `message.edited`     | Edited messages                                         |
+| `message.ack`        | Delivery and read receipts                              |
+| `message.deleted`    | Messages deleted for the user                           |
+| `group.participants` | Group member join/leave/promote/demote events           |
+| `group.joined`       | You were added to a group                               |
+| `newsletter.joined`  | You subscribed to a newsletter/channel                  |
+| `newsletter.left`    | You unsubscribed from a newsletter                      |
+| `newsletter.message` | New message(s) posted in a newsletter                   |
+| `newsletter.mute`    | Newsletter mute setting changed                         |
+| `call.offer`         | Incoming call received                                  |
+
+### Configuration Examples
+
+<CodeGroup>
+
+```bash Environment Variable
+# Only receive message and read receipt events
+WHATSAPP_WEBHOOK_EVENTS=message,message.ack
+
+# Receive all message-related events
+WHATSAPP_WEBHOOK_EVENTS=message,message.reaction,message.revoked,message.edited,message.ack,message.deleted
+
+# Receive only group events
+WHATSAPP_WEBHOOK_EVENTS=group.participants
+
+# Receive newsletter events
+WHATSAPP_WEBHOOK_EVENTS=newsletter.joined,newsletter.left,newsletter.message,newsletter.mute
+```
+
+```bash CLI Flag
+# Only receive message events
+./whatsapp rest --webhook="https://yourapp.com/webhook" --webhook-events="message"
+
+# Receive message and group events
+./whatsapp rest --webhook="https://yourapp.com/webhook" --webhook-events="message,group.participants"
+```
+
+</CodeGroup>
+
+<Note>
+  If `WHATSAPP_WEBHOOK_EVENTS` is empty or not set, **all events** are forwarded (default behavior).
+</Note>
+
+## Security
+
+### HMAC Signature Verification
+
+All webhook requests include an HMAC SHA256 signature for security verification:
+
+- **Header**: `X-Hub-Signature-256`
+- **Format**: `sha256={signature}`
+- **Algorithm**: HMAC SHA256
+- **Default Secret**: `secret` (configurable via `--webhook-secret` or `WHATSAPP_WEBHOOK_SECRET`)
+
+### Verification Examples
+
+<CodeGroup>
+
+```javascript Node.js
+const crypto = require('crypto');
+
+function verifyWebhookSignature(payload, signature, secret) {
+    const expectedSignature = crypto
+        .createHmac('sha256', secret)
+        .update(payload, 'utf8')
+        .digest('hex');
+
+    const receivedSignature = signature.replace('sha256=', '');
+    return crypto.timingSafeEqual(
+        Buffer.from(expectedSignature, 'hex'),
+        Buffer.from(receivedSignature, 'hex')
+    );
+}
+```
+
+```python Python
+import hmac
+import hashlib
+
+def verify_webhook_signature(payload, signature, secret):
+    expected_signature = hmac.new(
+        secret.encode('utf-8'),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    
+    received_signature = signature.replace('sha256=', '')
+    return hmac.compare_digest(expected_signature, received_signature)
+```
+
+</CodeGroup>
+
+### TLS Configuration
+
+If you encounter TLS certificate verification errors (e.g., with Cloudflare tunnels or self-signed certificates):
+
+```bash
+--webhook-insecure-skip-verify=true
+# Or
+WHATSAPP_WEBHOOK_INSECURE_SKIP_VERIFY=true
+```
+
+<Warning>
+  This option disables TLS certificate verification and should only be used in development/testing environments or with services like Cloudflare tunnels. For production, use proper SSL certificates (e.g., Let's Encrypt).
+</Warning>
+
+## Payload Structure
+
+All webhook payloads follow a consistent top-level structure:
+
+```json
+{
+  "event": "message",
+  "device_id": "628123456789@s.whatsapp.net",
+  "payload": {
+    // Event-specific fields
+  }
+}
+```
+
+### Top-Level Fields
+
+| Field       | Type   | Description                                                                |
+|-------------|--------|----------------------------------------------------------------------------|
+| `event`     | string | Event type (see Available Events table above)                              |
+| `device_id` | string | JID of the device that received this event (e.g., `628123456789@s.whatsapp.net`) |
+| `payload`   | object | Event-specific payload data                                                |
+
+## Event Examples
+
+### Text Message
+
+```json
+{
+  "event": "message",
+  "device_id": "628987654321@s.whatsapp.net",
+  "payload": {
+    "id": "3EB0C127D7BACC83D6A1",
+    "chat_id": "628987654321@s.whatsapp.net",
+    "from": "628123456789@s.whatsapp.net",
+    "from_lid": "251556368777322@lid",
+    "from_name": "John Doe",
+    "timestamp": "2023-10-15T10:30:00Z",
+    "is_from_me": false,
+    "body": "Hello, how are you?"
+  }
+}
+```
+
+### Image Message
+
+<CodeGroup>
+
+```json Auto-download enabled
+{
+  "event": "message",
+  "device_id": "628987654321@s.whatsapp.net",
+  "payload": {
+    "id": "3EB0C127D7BACC83D6A3",
+    "chat_id": "628987654321@s.whatsapp.net",
+    "from": "628123456789@s.whatsapp.net",
+    "from_name": "John Doe",
+    "timestamp": "2025-07-13T11:05:51Z",
+    "body": "Check this out!",
+    "image": {
+      "path": "statics/media/1752404751-ad9e37ac-c658-4fe5-8d25-ba4a3f4d58fd.jpeg",
+      "caption": "Check this out!"
+    }
+  }
+}
+```
+
+```json Auto-download disabled
+{
+  "event": "message",
+  "device_id": "628987654321@s.whatsapp.net",
+  "payload": {
+    "id": "3EB0C127D7BACC83D6A3",
+    "chat_id": "628987654321@s.whatsapp.net",
+    "from": "628123456789@s.whatsapp.net",
+    "from_name": "John Doe",
+    "timestamp": "2025-07-13T11:05:51Z",
+    "body": "Check this out!",
+    "image": {
+      "url": "https://mmg.whatsapp.net/...",
+      "caption": "Check this out!"
+    }
+  }
+}
+```
+
+</CodeGroup>
+
+### Message Reaction
+
+```json
+{
+  "event": "message.reaction",
+  "device_id": "628987654321@s.whatsapp.net",
+  "payload": {
+    "id": "88760C69D1F35FEB239102699AE9XXXX",
+    "chat_id": "628987654321@s.whatsapp.net",
+    "from": "628123456789@s.whatsapp.net",
+    "from_name": "John Doe",
+    "timestamp": "2023-10-15T10:40:00Z",
+    "is_from_me": false,
+    "reaction": "👍",
+    "reacted_message_id": "3EB0C127D7BACC83D6A1"
+  }
+}
+```
+
+### Delivery Receipt
+
+```json
+{
+  "event": "message.ack",
+  "device_id": "628123456789@s.whatsapp.net",
+  "timestamp": "2025-07-18T22:44:20Z",
+  "payload": {
+    "ids": [
+      "3EB00106E8BE0F407E88EC"
+    ],
+    "chat_id": "120363402106XXXXX@g.us",
+    "from": "6289685XXXXXX@s.whatsapp.net",
+    "from_lid": "251556368777322@lid",
+    "receipt_type": "delivered",
+    "receipt_type_description": "means the message was delivered to the device (but the user might not have noticed)."
+  }
+}
+```
+
+### Group Member Join
+
+```json
+{
+  "event": "group.participants",
+  "device_id": "628123456789@s.whatsapp.net",
+  "timestamp": "2025-07-28T10:30:00Z",
+  "payload": {
+    "chat_id": "120363402106XXXXX@g.us",
+    "type": "join",
+    "jids": [
+      "6289685XXXXXX@s.whatsapp.net",
+      "6289686YYYYYY@s.whatsapp.net"
+    ]
+  }
+}
+```
+
+### Newsletter Joined
+
+```json
+{
+  "event": "newsletter.joined",
+  "device_id": "628123456789@s.whatsapp.net",
+  "timestamp": "2026-01-18T12:00:00Z",
+  "payload": {
+    "newsletter_id": "120363123456789@newsletter",
+    "name": "Tech News Daily",
+    "description": "Latest tech updates and news"
+  }
+}
+```
+
+### Incoming Call
+
+```json
+{
+  "event": "call.offer",
+  "device_id": "628123456789@s.whatsapp.net",
+  "timestamp": "2026-02-05T12:00:00Z",
+  "payload": {
+    "call_id": "ABC123DEF456",
+    "from": "628987654321@s.whatsapp.net",
+    "auto_rejected": false,
+    "remote_platform": "android",
+    "remote_version": "2.24.1.5"
+  }
+}
+```
+
+<Note>
+  You can auto-reject incoming calls using `WHATSAPP_AUTO_REJECT_CALL=true` or `--auto-reject-call=true`.
+</Note>
+
+## Implementation Example
+
+<CodeGroup>
+
+```javascript Express.js
+const express = require('express');
+const crypto = require('crypto');
+const app = express();
+
+app.use(express.raw({type: 'application/json'}));
+
+app.post('/webhook', (req, res) => {
+    const signature = req.headers['x-hub-signature-256'];
+    const payload = req.body;
+    const secret = 'your-secret-key';
+
+    // Verify signature
+    if (!verifyWebhookSignature(payload, signature, secret)) {
+        return res.status(401).send('Unauthorized');
+    }
+
+    // Parse and process webhook data
+    const data = JSON.parse(payload);
+    console.log('Received webhook:', data);
+
+    // Handle different event types
+    switch (data.event) {
+        case 'message':
+            console.log('New message:', {
+                id: data.payload.id,
+                from: data.payload.from,
+                body: data.payload.body,
+                chat_id: data.payload.chat_id
+            });
+            break;
+
+        case 'message.reaction':
+            console.log('Reaction:', {
+                reaction: data.payload.reaction,
+                reacted_message_id: data.payload.reacted_message_id
+            });
+            break;
+
+        case 'message.ack':
+            console.log(`Message ${data.payload.receipt_type}:`, {
+                chat_id: data.payload.chat_id,
+                message_ids: data.payload.ids
+            });
+            break;
+
+        case 'group.participants':
+            console.log(`Group ${data.payload.type} event:`, {
+                chat_id: data.payload.chat_id,
+                affected_users: data.payload.jids
+            });
+            break;
+
+        case 'call.offer':
+            console.log('Incoming call:', {
+                call_id: data.payload.call_id,
+                from: data.payload.from,
+                auto_rejected: data.payload.auto_rejected
+            });
+            break;
+    }
+
+    res.status(200).send('OK');
+});
+
+function verifyWebhookSignature(payload, signature, secret) {
+    const expectedSignature = crypto
+        .createHmac('sha256', secret)
+        .update(payload, 'utf8')
+        .digest('hex');
+
+    const receivedSignature = signature.replace('sha256=', '');
+    return crypto.timingSafeEqual(
+        Buffer.from(expectedSignature, 'hex'),
+        Buffer.from(receivedSignature, 'hex')
+    );
+}
+
+app.listen(3001, () => {
+    console.log('Webhook server listening on port 3001');
+});
+```
+
+```python Flask
+from flask import Flask, request
+import hmac
+import hashlib
+import json
+
+app = Flask(__name__)
+WEBHOOK_SECRET = 'your-secret-key'
+
+def verify_signature(payload, signature):
+    expected_signature = hmac.new(
+        WEBHOOK_SECRET.encode('utf-8'),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    
+    received_signature = signature.replace('sha256=', '')
+    return hmac.compare_digest(expected_signature, received_signature)
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    signature = request.headers.get('X-Hub-Signature-256')
+    payload = request.get_data()
+    
+    if not verify_signature(payload, signature):
+        return 'Unauthorized', 401
+    
+    data = json.loads(payload)
+    event_type = data['event']
+    
+    if event_type == 'message':
+        print(f"New message from {data['payload']['from']}: {data['payload'].get('body', '')}")
+    elif event_type == 'message.reaction':
+        print(f"Reaction: {data['payload']['reaction']}")
+    elif event_type == 'group.participants':
+        print(f"Group event: {data['payload']['type']}")
+    
+    return 'OK', 200
+
+if __name__ == '__main__':
+    app.run(port=3001)
+```
+
+</CodeGroup>
+
+## Error Handling
+
+The webhook system includes retry logic with exponential backoff:
+
+- **Timeout**: 10 seconds per request
+- **Max Attempts**: 5 retries
+- **Backoff**: Exponential (1s, 2s, 4s, 8s, 16s)
+
+### Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Always verify signatures" icon="shield-check">
+    Ensure webhook authenticity by validating HMAC signatures
+  </Card>
+  <Card title="Handle duplicates" icon="copy">
+    The same event might be sent multiple times due to retries
+  </Card>
+  <Card title="Process quickly" icon="bolt">
+    Respond within 10 seconds to avoid timeouts
+  </Card>
+  <Card title="Use HTTPS" icon="lock">
+    Ensure secure transmission of webhook data
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+### Webhook not receiving events
+
+- Check webhook URL is accessible from the internet
+- Verify webhook configuration in environment variables
+- Check firewall and network settings
+
+### Signature verification fails
+
+- Ensure webhook secret matches configuration
+- Use raw request body for signature calculation
+- Check HMAC implementation matches examples above
+
+### Timeouts
+
+- Optimize webhook processing speed
+- Implement asynchronous processing
+- Return response quickly, process in background
+
+### Debug Logging
+
+Enable debug mode to see webhook logs:
+
+```bash
+./whatsapp rest --debug=true --webhook="https://yourapp.com/webhook"
+```
+
+This will show detailed logs of webhook delivery attempts and errors.

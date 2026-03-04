@@ -1,0 +1,429 @@
+---
+title: 'n8n Integration'
+description: 'Use WhatsApp nodes in n8n workflows for automation'
+icon: 'diagram-project'
+---
+
+## Overview
+
+The n8n integration allows you to use WhatsApp in your n8n workflows through community nodes. This enables powerful automation scenarios combining WhatsApp with hundreds of other services.
+
+<Note>
+  n8n is a workflow automation tool that lets you connect apps and services together. Learn more at [n8n.io](https://n8n.io).
+</Note>
+
+## Installation
+
+### Install via n8n Community Nodes
+
+<Steps>
+  <Step title="Open n8n Settings">
+    Navigate to **Settings** in your n8n instance
+  </Step>
+  
+  <Step title="Go to Community Nodes">
+    Click on **Community Nodes** in the sidebar
+  </Step>
+  
+  <Step title="Install Package">
+    Enter `@aldinokemal2104/n8n-nodes-gowa` in the package name field and click **Install**
+  </Step>
+  
+  <Step title="Wait for Installation">
+    The installation may take a few moments. Once complete, the WhatsApp nodes will be available in your node palette
+  </Step>
+</Steps>
+
+### Package Information
+
+- **Package Name**: `@aldinokemal2104/n8n-nodes-gowa`
+- **npm Registry**: [npmjs.com/package/@aldinokemal2104/n8n-nodes-gowa](https://www.npmjs.com/package/@aldinokemal2104/n8n-nodes-gowa)
+- **Repository**: Based on GOWA (Go WhatsApp Web API)
+
+## Prerequisites
+
+<Card title="WhatsApp REST API Running" icon="server">
+  You need a running instance of the Go WhatsApp Web Multidevice REST API server to use the n8n nodes.
+</Card>
+
+<Steps>
+  <Step title="Start WhatsApp API">
+    ```bash
+    ./whatsapp rest --port=3000
+    ```
+  </Step>
+  
+  <Step title="Login to WhatsApp">
+    Access `http://localhost:3000` and scan the QR code to login
+  </Step>
+  
+  <Step title="Note API URL">
+    You'll need the API URL (e.g., `http://localhost:3000`) for configuring n8n nodes
+  </Step>
+</Steps>
+
+## Configuration in n8n
+
+### Creating a Credential
+
+1. In your n8n workflow, add a WhatsApp node
+2. Click on **Create New Credential**
+3. Configure the credential with:
+   - **API URL**: Your WhatsApp REST API URL (e.g., `http://localhost:3000`)
+   - **Authentication** (if enabled):
+     - Username and password from `APP_BASIC_AUTH`
+   - **Device ID** (if using multi-device setup):
+     - The device ID you want to use for this workflow
+
+### Credential Example
+
+```json
+{
+  "apiUrl": "http://localhost:3000",
+  "username": "admin",
+  "password": "secret",
+  "deviceId": "my-device-id"
+}
+```
+
+## Available Nodes
+
+The n8n package provides nodes that mirror the REST API capabilities:
+
+### Message Nodes
+
+<CardGroup cols={2}>
+  <Card title="Send Text Message" icon="message">
+    Send text messages to contacts or groups
+  </Card>
+  <Card title="Send Image" icon="image">
+    Send images with optional captions
+  </Card>
+  <Card title="Send Video" icon="video">
+    Send video files with captions
+  </Card>
+  <Card title="Send Document" icon="file">
+    Send document files
+  </Card>
+  <Card title="Send Audio" icon="microphone">
+    Send audio messages
+  </Card>
+  <Card title="Send Sticker" icon="face-smile">
+    Send stickers (auto-converts to WebP)
+  </Card>
+  <Card title="Send Contact" icon="address-card">
+    Share contact cards
+  </Card>
+  <Card title="Send Location" icon="location-dot">
+    Share location coordinates
+  </Card>
+</CardGroup>
+
+### Query Nodes
+
+<CardGroup cols={2}>
+  <Card title="Get Chat Messages" icon="envelope">
+    Fetch messages from a specific chat
+  </Card>
+  <Card title="List Chats" icon="comments">
+    Get all chats with pagination
+  </Card>
+  <Card title="List Contacts" icon="users">
+    Retrieve all contacts
+  </Card>
+  <Card title="Get User Info" icon="circle-info">
+    Get information about a user
+  </Card>
+</CardGroup>
+
+### Group Nodes
+
+<CardGroup cols={2}>
+  <Card title="Create Group" icon="user-group">
+    Create new WhatsApp groups
+  </Card>
+  <Card title="Manage Participants" icon="user-gear">
+    Add, remove, promote, or demote members
+  </Card>
+  <Card title="Get Group Info" icon="circle-info">
+    Fetch group details
+  </Card>
+  <Card title="Set Group Settings" icon="gear">
+    Update group name, topic, or settings
+  </Card>
+</CardGroup>
+
+## Workflow Examples
+
+### Example 1: Send Welcome Message
+
+Create a workflow that sends a welcome message when a new contact is added:
+
+<Steps>
+  <Step title="Trigger Node">
+    Use a **Webhook** node to receive new contact notifications
+  </Step>
+  
+  <Step title="WhatsApp Node">
+    Add a **WhatsApp - Send Text Message** node
+    
+    Configure:
+    - **Phone**: `{{$json.phone}}`
+    - **Message**: `Welcome! Thanks for connecting with us.`
+  </Step>
+</Steps>
+
+### Example 2: Customer Support Automation
+
+Automate customer support responses:
+
+<Steps>
+  <Step title="Webhook Trigger">
+    Configure WhatsApp webhook to send message events to n8n
+  </Step>
+  
+  <Step title="Filter Messages">
+    Use an **IF** node to check message content
+  </Step>
+  
+  <Step title="Send Response">
+    Add **WhatsApp - Send Text Message** node with appropriate response
+  </Step>
+  
+  <Step title="Create Ticket (Optional)">
+    If needed, create a ticket in your support system
+  </Step>
+</Steps>
+
+### Example 3: Daily Report Distribution
+
+Send daily reports to a WhatsApp group:
+
+<Steps>
+  <Step title="Schedule Trigger">
+    Use **Cron** node to trigger daily at specific time
+  </Step>
+  
+  <Step title="Generate Report">
+    Use **HTTP Request** or **Database** nodes to fetch data
+  </Step>
+  
+  <Step title="Format Message">
+    Use **Set** node to format the report text
+  </Step>
+  
+  <Step title="Send to Group">
+    Use **WhatsApp - Send Text Message** node
+    
+    Configure:
+    - **Phone**: `120363402106XXXXX@g.us` (group JID)
+    - **Message**: `{{$json.report}}`
+  </Step>
+</Steps>
+
+### Example 4: Media Backup
+
+Automatically backup received media files:
+
+<Steps>
+  <Step title="Webhook Trigger">
+    Receive message events from WhatsApp
+  </Step>
+  
+  <Step title="Filter Media Messages">
+    Use **IF** node to check if message contains media
+  </Step>
+  
+  <Step title="Download Media">
+    Use **WhatsApp - Download Media** node
+  </Step>
+  
+  <Step title="Upload to Cloud">
+    Use **Google Drive**, **Dropbox**, or **S3** node to store the file
+  </Step>
+</Steps>
+
+## Common Use Cases
+
+<AccordionGroup>
+  <Accordion title="E-commerce Order Notifications">
+    - Trigger: New order in your e-commerce platform
+    - Action: Send order confirmation via WhatsApp
+    - Includes: Order details, tracking link, estimated delivery
+  </Accordion>
+  
+  <Accordion title="Appointment Reminders">
+    - Trigger: Scheduled time (24 hours before appointment)
+    - Action: Send reminder message
+    - Includes: Appointment details, location, cancellation link
+  </Accordion>
+  
+  <Accordion title="Alert Notifications">
+    - Trigger: System monitoring alerts
+    - Action: Send alert to operations group
+    - Includes: Alert severity, affected service, action required
+  </Accordion>
+  
+  <Accordion title="Content Distribution">
+    - Trigger: New blog post or content published
+    - Action: Send notification to subscribers
+    - Includes: Title, summary, link to content
+  </Accordion>
+  
+  <Accordion title="Survey Distribution">
+    - Trigger: Customer interaction completed
+    - Action: Send survey link
+    - Follow-up: Thank you message after completion
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Error Handling" icon="triangle-exclamation">
+    Always add error handling nodes to your workflows to manage failed WhatsApp API calls gracefully
+  </Card>
+  
+  <Card title="Rate Limiting" icon="gauge">
+    Implement delays between messages to avoid hitting WhatsApp rate limits
+  </Card>
+  
+  <Card title="Device Status Check" icon="signal">
+    Check device connection status before sending messages in critical workflows
+  </Card>
+  
+  <Card title="Use Variables" icon="code">
+    Store frequently used values (API URL, group IDs) as workflow variables
+  </Card>
+  
+  <Card title="Test Mode" icon="flask">
+    Use test phone numbers or groups when developing workflows
+  </Card>
+  
+  <Card title="Logging" icon="file-lines">
+    Log message sending attempts for debugging and audit purposes
+  </Card>
+</CardGroup>
+
+## Advanced Configuration
+
+### Multi-Device Setup
+
+When using multiple WhatsApp devices:
+
+```json
+{
+  "credentials": {
+    "deviceId": "support-device"
+  }
+}
+```
+
+Or use workflow variables:
+
+```javascript
+// In Function node
+const deviceId = $env.WHATSAPP_DEVICE_ID || 'default-device';
+return { deviceId };
+```
+
+### Webhook Integration
+
+Configure WhatsApp to send events to n8n:
+
+1. Start n8n workflow with Webhook trigger
+2. Copy webhook URL from n8n
+3. Configure WhatsApp API:
+   ```bash
+   WHATSAPP_WEBHOOK=https://your-n8n.com/webhook/whatsapp
+   ```
+
+### Dynamic Message Templates
+
+Use n8n expressions for dynamic content:
+
+```javascript
+// Template message
+Hello {{$json.customer.name}},
+
+Your order #{{$json.order.id}} has been confirmed.
+
+Total: ${{$json.order.total}}
+Expected delivery: {{$json.order.delivery_date}}
+
+Thank you for your purchase!
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Connection Errors">
+    **Problem**: Cannot connect to WhatsApp API
+    
+    **Solutions**:
+    - Verify API URL is correct and accessible from n8n
+    - Check if WhatsApp API server is running
+    - Verify firewall rules allow connection
+    - Test API endpoint with curl first
+  </Accordion>
+  
+  <Accordion title="Authentication Failed">
+    **Problem**: 401 Unauthorized errors
+    
+    **Solutions**:
+    - Check username and password match `APP_BASIC_AUTH`
+    - Verify credentials are saved in n8n
+    - Test credentials with direct API call
+  </Accordion>
+  
+  <Accordion title="Messages Not Sending">
+    **Problem**: Workflow runs but messages don't send
+    
+    **Solutions**:
+    - Check device is logged in: GET `/app/status`
+    - Verify phone number format (include country code)
+    - Check n8n execution logs for API response
+    - Verify device ID if using multi-device setup
+  </Accordion>
+  
+  <Accordion title="Media Upload Issues">
+    **Problem**: Cannot send images or files
+    
+    **Solutions**:
+    - Verify file URL is publicly accessible
+    - Check file size limits
+    - Ensure file format is supported
+    - Test with local file first
+  </Accordion>
+</AccordionGroup>
+
+## Resources
+
+<CardGroup cols={2}>
+  <Card title="npm Package" icon="npm" href="https://www.npmjs.com/package/@aldinokemal2104/n8n-nodes-gowa">
+    View the official npm package page
+  </Card>
+  
+  <Card title="n8n Documentation" icon="book" href="https://docs.n8n.io">
+    Learn more about n8n workflows
+  </Card>
+  
+  <Card title="WhatsApp API Reference" icon="code" href="/api-reference">
+    Complete REST API documentation
+  </Card>
+  
+  <Card title="Community Nodes" icon="puzzle-piece" href="https://docs.n8n.io/integrations/community-nodes/">
+    Learn about n8n community nodes
+  </Card>
+</CardGroup>
+
+## Support
+
+For issues specific to the n8n integration:
+
+1. Check the [npm package](https://www.npmjs.com/package/@aldinokemal2104/n8n-nodes-gowa) for updates
+2. Review n8n execution logs for detailed error messages
+3. Verify your WhatsApp REST API is working correctly
+4. Test API endpoints directly before using in n8n
+
+For WhatsApp API issues, refer to the main documentation and API reference.

@@ -1,0 +1,85 @@
+---
+title: 'Get Group Info'
+openapi: 'GET /group/info'
+---
+
+Retrieve detailed information about a WhatsApp group.
+
+<Info>
+This endpoint returns comprehensive group metadata including participants, settings, and creation details.
+</Info>
+
+## Request
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+<ParamField query="group_id" type="string" required>
+  The WhatsApp group ID to retrieve information for
+  
+  Example: `120363025982934543@g.us`
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="integer">
+  HTTP status code (e.g., `200`)
+</ResponseField>
+
+<ResponseField name="code" type="string">
+  Response code (e.g., `SUCCESS`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message describing the result
+  
+  Example: `Success get group info`
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  Group information object containing:
+  - Group metadata (JID, name, topic, owner)
+  - Creation and modification timestamps
+  - Participant list with roles
+  - Group settings (announce, locked, ephemeral)
+  - Version identifiers
+  
+  Note: The structure may vary based on group configuration
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X GET \
+  'https://your-api-domain.com/group/info?group_id=120363025982934543@g.us' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": 200,
+  "code": "SUCCESS",
+  "message": "Success get group info",
+  "results": {
+    "JID": "120363025982934543@g.us",
+    "OwnerJID": "6289685028129@s.whatsapp.net",
+    "Name": "Example Group",
+    "Topic": "Welcome to our group!",
+    "GroupCreated": "2024-01-10T08:00:00Z",
+    "IsAnnounce": false,
+    "IsLocked": false,
+    "IsEphemeral": false,
+    "Participants": [
+      {
+        "JID": "6289685028129@s.whatsapp.net",
+        "IsAdmin": true,
+        "IsSuperAdmin": true
+      }
+    ]
+  }
+}
+```
+</ResponseExample>

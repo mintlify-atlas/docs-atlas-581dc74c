@@ -1,0 +1,494 @@
+---
+title: 'Send Poll'
+openapi: 'POST /send/poll'
+---
+
+Send an interactive poll (vote) to a WhatsApp number or group. Recipients can select one or multiple options based on the poll configuration.
+
+<Note>
+Polls are interactive messages that allow recipients to vote on options. They're perfect for gathering opinions, making group decisions, or conducting quick surveys.
+</Note>
+
+## Endpoint
+
+```
+POST /send/poll
+```
+
+## Headers
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered.
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Request Body
+
+<ParamField body="phone" type="string" required>
+  Phone number with country code and WhatsApp suffix.
+  
+  **Format:** `{country_code}{phone_number}@s.whatsapp.net`
+  
+  **Example:** `6289685024421@s.whatsapp.net`
+</ParamField>
+
+<ParamField body="question" type="string" required>
+  The poll question. This is the main text that recipients will see.
+  
+  **Example:** `"Siapa Nama Avatar The Last Air Bender?"`
+  
+  **Recommendations:**
+  - Keep questions clear and concise
+  - Use proper grammar and punctuation
+  - Make the question specific and unambiguous
+</ParamField>
+
+<ParamField body="options" type="array" required>
+  Array of poll options. Recipients will choose from these options.
+  
+  **Type:** Array of strings
+  
+  **Requirements:**
+  - Minimum: 2 options
+  - Maximum: 12 options
+  - Each option should be distinct
+  
+  **Example:** `["Zuko", "Aang", "Katara"]`
+</ParamField>
+
+<ParamField body="max_answer" type="integer" required>
+  Maximum number of options a recipient can select.
+  
+  **Range:** 1 to number of options
+  
+  **Examples:**
+  - `1` - Single choice poll (radio button)
+  - `2` - Can select up to 2 options
+  - `3+` - Multiple choice poll (checkboxes)
+  
+  <Info>
+  Set to `1` for single-choice polls (most common use case).
+  </Info>
+</ParamField>
+
+<ParamField body="duration" type="integer">
+  Disappearing message duration in seconds (optional).
+  
+  **Common values:**
+  - `86400` - 24 hours
+  - `604800` - 7 days
+  - `7776000` - 90 days
+  
+  <Warning>
+  If the poll message disappears, all votes will be lost.
+  </Warning>
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response status code. Returns `"SUCCESS"` on successful send.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message.
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="message_id" type="string">
+    Unique identifier for the sent message.
+    
+    **Example:** `"3EB0B430B6F8F1D0E053AC120E0A9E5C"`
+  </ResponseField>
+  
+  <ResponseField name="status" type="string">
+    Detailed status message.
+  </ResponseField>
+</ResponseField>
+
+## Code Examples
+
+<CodeGroup>
+
+```bash Single Choice Poll
+curl -X POST http://localhost:3000/send/poll \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024421@s.whatsapp.net",
+    "question": "What is your favorite programming language?",
+    "options": ["JavaScript", "Python", "Go", "Rust"],
+    "max_answer": 1
+  }'
+```
+
+```bash Multiple Choice Poll
+curl -X POST http://localhost:3000/send/poll \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "120363025982934543@g.us",
+    "question": "Which days work for the team meeting? (Select all that apply)",
+    "options": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+    "max_answer": 3
+  }'
+```
+
+```bash Yes/No Poll
+curl -X POST http://localhost:3000/send/poll \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "120363025982934543@g.us",
+    "question": "Should we schedule the meeting for next week?",
+    "options": ["Yes", "No"],
+    "max_answer": 1
+  }'
+```
+
+```bash Rating Poll
+curl -X POST http://localhost:3000/send/poll \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024421@s.whatsapp.net",
+    "question": "How would you rate our service?",
+    "options": [
+      "⭐️ Excellent",
+      "😊 Good",
+      "😐 Average",
+      "🙁 Poor"
+    ],
+    "max_answer": 1
+  }'
+```
+
+```bash Event RSVP
+curl -X POST http://localhost:3000/send/poll \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "120363025982934543@g.us",
+    "question": "Will you attend the company picnic on Saturday?",
+    "options": [
+      "✅ Yes, I'll be there!",
+      "❌ No, I can't make it",
+      "🤔 Maybe, not sure yet"
+    ],
+    "max_answer": 1
+  }'
+```
+
+```bash Trivia Quiz
+curl -X POST http://localhost:3000/send/poll \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "120363025982934543@g.us",
+    "question": "Siapa Nama Avatar The Last Air Bender?",
+    "options": ["Zuko", "Aang", "Katara", "Sokka"],
+    "max_answer": 2
+  }'
+```
+
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": {
+    "message_id": "3EB0B430B6F8F1D0E053AC120E0A9E5C",
+    "status": "Poll sent successfully"
+  }
+}
+```
+
+## Poll Types
+
+### Single Choice Poll (max_answer: 1)
+
+Most common poll type. Recipients can select only one option.
+
+**Use cases:**
+- Simple yes/no questions
+- Rating surveys
+- Single preference selection
+- Quiz questions with one correct answer
+
+**Example:**
+```json
+{
+  "question": "What time should we meet?",
+  "options": ["9:00 AM", "10:00 AM", "11:00 AM"],
+  "max_answer": 1
+}
+```
+
+### Multiple Choice Poll (max_answer: 2+)
+
+Recipients can select multiple options up to the specified limit.
+
+**Use cases:**
+- Scheduling (select all available days)
+- Feature requests (top 3 features)
+- Interest surveys (select all that apply)
+- Group decision making
+
+**Example:**
+```json
+{
+  "question": "What features do you want most? (Pick top 3)",
+  "options": ["Dark Mode", "Export PDF", "Mobile App", "API Access", "Integrations"],
+  "max_answer": 3
+}
+```
+
+## Use Cases
+
+### Group Decision Making
+
+Get team consensus on important decisions:
+
+```bash
+curl -X POST http://localhost:3000/send/poll \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "120363025982934543@g.us",
+    "question": "Which project should we prioritize next quarter?",
+    "options": [
+      "Mobile App Redesign",
+      "API v2 Development",
+      "Performance Optimization",
+      "New Feature X"
+    ],
+    "max_answer": 1
+  }'
+```
+
+### Event Planning
+
+Coordinate schedules and gather RSVPs:
+
+```bash
+curl -X POST http://localhost:3000/send/poll \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "120363025982934543@g.us",
+    "question": "Team dinner next week - which days work for you?",
+    "options": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+    "max_answer": 5
+  }'
+```
+
+### Customer Feedback
+
+Collect product feedback and satisfaction ratings:
+
+```bash
+curl -X POST http://localhost:3000/send/poll \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "6289685024421@s.whatsapp.net",
+    "question": "How satisfied are you with our product?",
+    "options": [
+      "Very Satisfied 😍",
+      "Satisfied 😊",
+      "Neutral 😐",
+      "Dissatisfied 🙁",
+      "Very Dissatisfied 😡"
+    ],
+    "max_answer": 1
+  }'
+```
+
+### Quick Surveys
+
+Conduct market research or user preferences:
+
+```bash
+curl -X POST http://localhost:3000/send/poll \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "120363025982934543@g.us",
+    "question": "What type of content do you want to see more of?",
+    "options": [
+      "Tutorials",
+      "Case Studies",
+      "Product Updates",
+      "Industry News",
+      "Behind the Scenes"
+    ],
+    "max_answer": 2
+  }'
+```
+
+### Educational Quizzes
+
+Create interactive learning experiences:
+
+```bash
+curl -X POST http://localhost:3000/send/poll \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "120363025982934543@g.us",
+    "question": "Quiz: What is the capital of France?",
+    "options": ["London", "Paris", "Berlin", "Madrid"],
+    "max_answer": 1
+  }'
+```
+
+## Best Practices
+
+1. **Clear Questions**
+   - Be specific and unambiguous
+   - Use proper grammar
+   - Keep questions concise
+   - Avoid double-barreled questions
+
+2. **Well-Defined Options**
+   - Make options mutually exclusive
+   - Use parallel structure
+   - Keep option text brief
+   - Order logically (alphabetically, chronologically, etc.)
+
+3. **Appropriate max_answer**
+   - Use `1` for most polls (single choice)
+   - Use `2-3` for "select top X" scenarios
+   - Use `options.length` for "select all that apply"
+
+4. **Use Emojis**
+   - Make options more engaging
+   - Improve visual scanning
+   - Add personality to polls
+   - Don't overuse
+
+5. **Context Matters**
+   - Explain why you're polling
+   - Provide deadline if applicable
+   - Share results after poll closes
+   - Thank participants
+
+6. **Timing**
+   - Send during active hours
+   - Give enough time to respond
+   - Consider time zones for global teams
+   - Don't rush decision-making polls
+
+## Poll Limitations
+
+<Warning>
+Be aware of these WhatsApp poll limitations.
+</Warning>
+
+1. **Option Limit:** Maximum 12 options per poll
+2. **Minimum Options:** At least 2 options required
+3. **Text Only:** Options cannot include images or links
+4. **No Editing:** Cannot modify poll after sending
+5. **View Results:** Creator can see who voted for what
+6. **Anonymous Voting:** Not available (votes are attributed)
+7. **No Poll Closing:** Polls stay open indefinitely
+8. **Group Only Features:** Some features only work in groups
+
+## Poll Results
+
+WhatsApp shows poll results in real-time:
+
+- **Vote Count:** Number of votes per option
+- **Voter List:** See who voted for each option
+- **Percentage:** Percentage of participants who voted
+- **Your Vote:** Highlighted option(s) you selected
+- **Real-time Updates:** Results update as people vote
+
+<Info>
+Poll creators and participants can see detailed voting results, including who voted for which options. Voting is not anonymous.
+</Info>
+
+## Common Poll Templates
+
+### Meeting Scheduling
+```json
+{
+  "question": "Best time for weekly team sync?",
+  "options": ["9 AM", "10 AM", "2 PM", "3 PM", "4 PM"],
+  "max_answer": 1
+}
+```
+
+### Lunch Decision
+```json
+{
+  "question": "What should we order for lunch?",
+  "options": ["Pizza 🍕", "Sushi 🍣", "Burgers 🍔", "Salad 🥗"],
+  "max_answer": 1
+}
+```
+
+### Feature Prioritization
+```json
+{
+  "question": "Top 3 features you need most?",
+  "options": ["Feature A", "Feature B", "Feature C", "Feature D", "Feature E"],
+  "max_answer": 3
+}
+```
+
+### NPS Survey
+```json
+{
+  "question": "How likely are you to recommend us? (0-10)",
+  "options": ["0-2", "3-4", "5-6", "7-8", "9-10"],
+  "max_answer": 1
+}
+```
+
+## Error Responses
+
+<ResponseField name="400" type="Bad Request">
+  Common causes:
+  - Invalid phone number format
+  - Missing required fields (question, options, max_answer)
+  - Invalid options array (empty, too few, too many)
+  - max_answer exceeds number of options
+  - max_answer less than 1
+</ResponseField>
+
+<ResponseField name="500" type="Internal Server Error">
+  Common causes:
+  - Device not connected
+  - Network connectivity issues
+  - WhatsApp service temporarily unavailable
+</ResponseField>
+
+## Troubleshooting
+
+### Poll Not Sending
+1. Verify all required fields are provided
+2. Check options array has 2-12 items
+3. Ensure max_answer is valid (1 to options.length)
+4. Verify phone number format is correct
+5. Check device is connected
+
+### Invalid max_answer
+1. Must be at least 1
+2. Cannot exceed number of options
+3. Use 1 for single-choice polls
+4. Use higher numbers for multiple-choice
+
+### Options Not Displaying
+1. Check options is an array of strings
+2. Verify no empty strings in options
+3. Remove any null or undefined values
+4. Ensure proper JSON formatting
+
+## Related Endpoints
+
+- [Send Text](/api/send/text) - Send text messages
+- [Send Image](/api/send/image) - Send images
+- [Send Link](/api/send/link) - Send links with preview
+- [Group Info](/api/group/info) - Get group information

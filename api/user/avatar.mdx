@@ -1,0 +1,294 @@
+---
+title: 'User Avatar'
+api: 'GET /user/avatar'
+description: 'Get or update a user WhatsApp profile avatar'
+---
+
+<Tabs>
+  <Tab title="Get Avatar">
+
+Retrieve the profile picture URL for a WhatsApp user or group.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Basic authentication credentials (username:password in base64)
+</ParamField>
+
+## Headers
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+## Query Parameters
+
+<ParamField query="phone" type="string" required>
+  Phone number with WhatsApp suffix format
+  
+  **Example:** `6289685028129@s.whatsapp.net`
+</ParamField>
+
+<ParamField query="is_preview" type="boolean">
+  Whether to fetch a preview (lower resolution) of the avatar
+  
+  **Example:** `true`
+</ParamField>
+
+<ParamField query="is_community" type="boolean">
+  Whether to fetch a community avatar
+  
+  **Example:** `false`
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code indicating success or failure
+  
+  **Example:** `SUCCESS`
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message
+  
+  **Example:** `Success`
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  Avatar information
+  
+  <ResponseField name="url" type="string">
+    Direct URL to the profile picture
+    
+    **Example:** `https://pps.whatsapp.net/v/t61.24694-24/181358562_385581386633509_6230178822944778044_n.jpg?ccb=11-4&oh=df36c5b990497b8a5758a0f1ad8118a8&oe=620AA726`
+  </ResponseField>
+  
+  <ResponseField name="id" type="string">
+    Unique identifier for the avatar image
+    
+    **Example:** `1635239861`
+  </ResponseField>
+  
+  <ResponseField name="type" type="string">
+    Media type of the avatar
+    
+    **Example:** `image`
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET 'http://localhost:3000/user/avatar?phone=6289685028129@s.whatsapp.net&is_preview=true' \
+  -u 'username:password' \
+  -H 'X-Device-Id: my-device-id'
+```
+
+```javascript JavaScript
+const phone = '6289685028129@s.whatsapp.net';
+const isPreview = true;
+
+const response = await fetch(
+  `http://localhost:3000/user/avatar?phone=${encodeURIComponent(phone)}&is_preview=${isPreview}`,
+  {
+    method: 'GET',
+    headers: {
+      'Authorization': 'Basic ' + btoa('username:password'),
+      'X-Device-Id': 'my-device-id'
+    }
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+import base64
+from urllib.parse import quote
+
+username = 'username'
+password = 'password'
+credentials = base64.b64encode(f'{username}:{password}'.encode()).decode()
+phone = '6289685028129@s.whatsapp.net'
+
+response = requests.get(
+    f'http://localhost:3000/user/avatar',
+    params={
+        'phone': phone,
+        'is_preview': True
+    },
+    headers={
+        'Authorization': f'Basic {credentials}',
+        'X-Device-Id': 'my-device-id'
+    }
+)
+
+print(response.json())
+```
+
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": {
+    "url": "https://pps.whatsapp.net/v/t61.24694-24/181358562_385581386633509_6230178822944778044_n.jpg?ccb=11-4&oh=df36c5b990497b8a5758a0f1ad8118a8&oe=620AA726",
+    "id": "1635239861",
+    "type": "image"
+  }
+}
+```
+
+  </Tab>
+  <Tab title="Change Avatar">
+
+Update your own WhatsApp profile picture.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Basic authentication credentials (username:password in base64)
+</ParamField>
+
+## Headers
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+## Request Body
+
+<ParamField body="avatar" type="file" required>
+  Image file to use as your profile picture (binary data)
+  
+  **Supported formats:** JPEG, PNG, WebP
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code indicating success or failure
+  
+  **Example:** `SUCCESS`
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message
+  
+  **Example:** `Success`
+</ResponseField>
+
+<ResponseField name="results" type="string">
+  Additional result data (typically null)
+  
+  **Example:** `null`
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST 'http://localhost:3000/user/avatar' \
+  -u 'username:password' \
+  -H 'X-Device-Id: my-device-id' \
+  -F 'avatar=@/path/to/image.jpg'
+```
+
+```javascript JavaScript
+const formData = new FormData();
+const fileInput = document.querySelector('input[type="file"]');
+formData.append('avatar', fileInput.files[0]);
+
+const response = await fetch('http://localhost:3000/user/avatar', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Basic ' + btoa('username:password'),
+    'X-Device-Id': 'my-device-id'
+  },
+  body: formData
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+import base64
+
+username = 'username'
+password = 'password'
+credentials = base64.b64encode(f'{username}:{password}'.encode()).decode()
+
+with open('/path/to/image.jpg', 'rb') as avatar_file:
+    files = {'avatar': avatar_file}
+    response = requests.post(
+        'http://localhost:3000/user/avatar',
+        headers={
+            'Authorization': f'Basic {credentials}',
+            'X-Device-Id': 'my-device-id'
+        },
+        files=files
+    )
+
+print(response.json())
+```
+
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": null
+}
+```
+
+  </Tab>
+</Tabs>
+
+## Error Responses
+
+<ResponseField name="400" type="object">
+  Bad Request
+  
+  ```json
+  {
+    "code": "400",
+    "message": "Invalid file format",
+    "results": null
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500" type="object">
+  Internal Server Error
+  
+  ```json
+  {
+    "code": "INTERNAL_SERVER_ERROR",
+    "message": "Failed to update avatar",
+    "results": null
+  }
+  ```
+</ResponseField>
+
+## Usage Notes
+
+- Use `is_preview=true` to get a smaller, lower resolution version of the avatar
+- The avatar URL is temporary and may expire
+- For groups, use the group JID with `@g.us` suffix
+- The `id` field can be used to detect avatar changes
+- Maximum file size for avatar upload is typically 5MB
+- Images are automatically resized and cropped by WhatsApp

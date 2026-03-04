@@ -1,0 +1,265 @@
+---
+title: 'Send Audio'
+openapi: 'POST /send/audio'
+---
+
+Send an audio message or voice note to a WhatsApp number or group. Supports audio file upload and URL-based audio.
+
+<Note>
+Audio messages are sent as voice notes in WhatsApp, displayed with a playable waveform in the chat interface.
+</Note>
+
+## Endpoint
+
+```
+POST /send/audio
+```
+
+## Headers
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered.
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `multipart/form-data` for file uploads.
+</ParamField>
+
+## Request Body (multipart/form-data)
+
+<ParamField body="phone" type="string" required>
+  Phone number with country code and WhatsApp suffix.
+  
+  **Format:** `{country_code}{phone_number}@s.whatsapp.net`
+  
+  **Example:** `6289685028129@s.whatsapp.net`
+</ParamField>
+
+<ParamField body="audio" type="file">
+  Audio file to upload. Supports common audio formats (MP3, OGG, AAC, WAV, M4A, OPUS).
+  
+  <Info>
+  Either `audio` (file upload) or `audio_url` must be provided, but not both.
+  </Info>
+</ParamField>
+
+<ParamField body="audio_url" type="string">
+  URL of the audio file to send. The API will download and send the audio from this URL.
+  
+  **Example:** `"https://example.com/audio.mp3"`
+  
+  <Info>
+  Either `audio` (file upload) or `audio_url` must be provided, but not both.
+  </Info>
+</ParamField>
+
+<ParamField body="is_forwarded" type="boolean" default={false}>
+  Mark the message as forwarded.
+</ParamField>
+
+<ParamField body="duration" type="integer">
+  Disappearing message duration in seconds.
+  
+  **Common values:**
+  - `86400` - 24 hours
+  - `604800` - 7 days
+  - `7776000` - 90 days
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response status code. Returns `"SUCCESS"` on successful send.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message.
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="message_id" type="string">
+    Unique identifier for the sent message.
+    
+    **Example:** `"3EB0B430B6F8F1D0E053AC120E0A9E5C"`
+  </ResponseField>
+  
+  <ResponseField name="status" type="string">
+    Detailed status message.
+  </ResponseField>
+</ResponseField>
+
+## Code Examples
+
+<CodeGroup>
+
+```bash File Upload
+curl -X POST http://localhost:3000/send/audio \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "audio=@/path/to/voice-note.mp3"
+```
+
+```bash Audio URL
+curl -X POST http://localhost:3000/send/audio \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "audio_url=https://example.com/podcast-episode.mp3"
+```
+
+```bash Disappearing Audio
+curl -X POST http://localhost:3000/send/audio \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "audio=@/path/to/voice.mp3" \
+  -F "duration=3600"
+```
+
+```bash Forwarded Audio
+curl -X POST http://localhost:3000/send/audio \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "audio=@/path/to/shared-audio.mp3" \
+  -F "is_forwarded=true"
+```
+
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": {
+    "message_id": "3EB0B430B6F8F1D0E053AC120E0A9E5C",
+    "status": "Audio sent successfully"
+  }
+}
+```
+
+## Audio Format Support
+
+### Supported Formats
+- **MP3** (.mp3) - Most common, widely supported
+- **OGG** (.ogg) - Opus codec, high quality
+- **AAC** (.aac, .m4a) - Good quality, smaller file size
+- **WAV** (.wav) - Uncompressed, large file size
+- **AMR** (.amr) - Low bitrate, voice optimized
+- **OPUS** (.opus) - Modern, efficient codec
+
+### Recommended Settings
+- **Format:** OGG Opus or MP3
+- **Bitrate:** 32-64 kbps for voice notes, 128-192 kbps for music
+- **Sample Rate:** 16 kHz for voice, 44.1 kHz for music
+- **Channels:** Mono for voice notes, Stereo for music
+
+## File Size Limits
+
+<Warning>
+WhatsApp has strict limits on audio message sizes.
+</Warning>
+
+- **Maximum file size:** 16MB
+- **Recommended:** Under 5MB for reliable delivery
+- **Maximum duration:** ~30 minutes (depends on bitrate)
+
+## Use Cases
+
+### Voice Notes
+
+Send recorded voice messages for personal communication:
+
+```bash
+curl -X POST http://localhost:3000/send/audio \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "audio=@recording.ogg"
+```
+
+### Audio Content Distribution
+
+Share podcast episodes, music, or audio announcements:
+
+```bash
+curl -X POST http://localhost:3000/send/audio \
+  -H "X-Device-Id: my-device" \
+  -F "phone=120363025982934543@g.us" \
+  -F "audio_url=https://cdn.example.com/podcast-ep42.mp3"
+```
+
+### Automated Voice Notifications
+
+Send pre-recorded voice notifications or alerts:
+
+```bash
+curl -X POST http://localhost:3000/send/audio \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "audio=@alerts/delivery-notification.mp3"
+```
+
+## Best Practices
+
+1. **Optimize Audio Files**
+   - Use appropriate bitrates (32-64 kbps for voice)
+   - Convert to OGG Opus for best compression
+   - Keep voice notes under 3 minutes for better UX
+
+2. **Choose the Right Format**
+   - Voice notes: OGG Opus or AMR
+   - Music/Podcasts: MP3 or AAC
+   - High quality needs: WAV (but compress if possible)
+
+3. **File Naming**
+   - Use descriptive file names
+   - Include timestamps for recordings
+   - Avoid special characters
+
+4. **URL-Based Sending**
+   - Ensure URLs are publicly accessible
+   - Use HTTPS for security
+   - Verify audio format before sending
+
+5. **Error Handling**
+   - Check file size before upload
+   - Implement retry logic for network failures
+   - Validate audio format on client side
+
+## Audio Processing
+
+The API automatically processes audio files:
+
+- **Format Conversion:** Converts to WhatsApp-compatible formats
+- **Bitrate Optimization:** Adjusts bitrate for optimal delivery
+- **Metadata Stripping:** Removes unnecessary metadata to reduce file size
+- **Waveform Generation:** Creates visual waveform for WhatsApp display
+
+<Note>
+Processing time varies based on audio duration and file size. Large files may take longer to process before sending.
+</Note>
+
+## Error Responses
+
+<ResponseField name="400" type="Bad Request">
+  Common causes:
+  - Invalid phone number format
+  - Missing both `audio` and `audio_url`
+  - Providing both `audio` and `audio_url`
+  - Unsupported audio format
+  - File too large (>16MB)
+</ResponseField>
+
+<ResponseField name="500" type="Internal Server Error">
+  Common causes:
+  - Device not connected
+  - Failed to download audio from URL
+  - Audio processing/conversion error
+  - Network connectivity issues
+</ResponseField>
+
+## Related Endpoints
+
+- [Send Video](/api/send/video) - Send video messages
+- [Send File](/api/send/file) - Send document files
+- [Send Image](/api/send/image) - Send image messages
+- [Download Media](/api/message/download) - Download media from messages

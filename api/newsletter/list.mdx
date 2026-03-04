@@ -1,0 +1,161 @@
+---
+title: 'List Newsletters'
+openapi: 'GET /user/my/newsletters'
+---
+
+Retrieve a list of all newsletters (channels) that you are subscribed to.
+
+<Info>
+Newsletters are WhatsApp's broadcast channels that allow you to receive updates from organizations and creators.
+</Info>
+
+## Request
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code (e.g., `SUCCESS`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message describing the result
+  
+  Example: `Success get list newsletter`
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="data" type="array">
+    Array of newsletter objects
+    
+    <Expandable title="Newsletter Object">
+      <ResponseField name="id" type="string">
+        Newsletter ID
+        
+        Example: `120363144038483540@newsletter`
+      </ResponseField>
+      
+      <ResponseField name="state" type="object">
+        <ResponseField name="type" type="string">
+          Newsletter state
+          
+          Example: `active`
+        </ResponseField>
+      </ResponseField>
+      
+      <ResponseField name="thread_metadata" type="object">
+        <ResponseField name="creation_time" type="string">
+          Unix timestamp of when the newsletter was created
+        </ResponseField>
+        
+        <ResponseField name="invite" type="string">
+          Newsletter invite code
+        </ResponseField>
+        
+        <ResponseField name="name" type="object">
+          <ResponseField name="text" type="string">
+            Newsletter name
+            
+            Example: `WhatsApp`
+          </ResponseField>
+          
+          <ResponseField name="id" type="string">
+            Name version ID
+          </ResponseField>
+          
+          <ResponseField name="update_time" type="string">
+            Last update timestamp
+          </ResponseField>
+        </ResponseField>
+        
+        <ResponseField name="description" type="object">
+          <ResponseField name="text" type="string">
+            Newsletter description
+          </ResponseField>
+          
+          <ResponseField name="id" type="string">
+            Description version ID
+          </ResponseField>
+          
+          <ResponseField name="update_time" type="string">
+            Last update timestamp
+          </ResponseField>
+        </ResponseField>
+        
+        <ResponseField name="subscribers_count" type="string">
+          Number of subscribers
+        </ResponseField>
+        
+        <ResponseField name="verification" type="string">
+          Verification status (e.g., `verified`)
+        </ResponseField>
+        
+        <ResponseField name="picture" type="object">
+          <ResponseField name="url" type="string">
+            Newsletter profile picture URL
+          </ResponseField>
+          
+          <ResponseField name="id" type="string">
+            Picture ID
+          </ResponseField>
+          
+          <ResponseField name="type" type="string">
+            Media type (e.g., `IMAGE`)
+          </ResponseField>
+        </ResponseField>
+      </ResponseField>
+    </Expandable>
+  </ResponseField>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X GET \
+  'https://your-api-domain.com/user/my/newsletters' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "code": "SUCCESS",
+  "message": "Success get list newsletter",
+  "results": {
+    "data": [
+      {
+        "id": "120363144038483540@newsletter",
+        "state": {
+          "type": "active"
+        },
+        "thread_metadata": {
+          "creation_time": "1688746895",
+          "invite": "0029Va4K0PZ5a245NkngBA2M",
+          "name": {
+            "text": "WhatsApp",
+            "id": "1688746895480511",
+            "update_time": "1688746895480511"
+          },
+          "description": {
+            "text": "WhatsApp's official channel. Follow for our latest feature launches, updates, exclusive drops and more.",
+            "id": "1689653839450668",
+            "update_time": "1689653839450668"
+          },
+          "subscribers_count": "0",
+          "verification": "verified",
+          "picture": {
+            "url": "",
+            "id": "1707950960975554",
+            "type": "IMAGE"
+          }
+        }
+      }
+    ]
+  }
+}
+```
+</ResponseExample>

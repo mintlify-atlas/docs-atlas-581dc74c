@@ -1,0 +1,79 @@
+---
+title: 'Edit Message'
+openapi: 'POST /message/{message_id}/update'
+---
+
+Edit a text message that you have sent. Messages can only be edited within 15 minutes of sending.
+
+<Warning>
+You can only edit messages within 15 minutes of sending them. After this time window, the edit will fail.
+</Warning>
+
+## Request
+
+<ParamField path="message_id" type="string" required>
+  The unique identifier of the message to edit
+</ParamField>
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+<ParamField body="phone" type="string" required>
+  Phone number with country code and WhatsApp suffix
+  
+  Example: `62819273192397132@s.whatsapp.net`
+</ParamField>
+
+<ParamField body="message" type="string" required>
+  The new text content for the message
+  
+  Example: `Hello World`
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code (e.g., `SUCCESS`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message describing the result
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="message_id" type="string">
+    The ID of the edited message
+  </ResponseField>
+  
+  <ResponseField name="status" type="string">
+    Status of the edit operation
+  </ResponseField>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X POST \
+  'https://your-api-domain.com/message/3EB0B430B6F8F1D0E053AC120E0A9E5C/update' \
+  -H 'Content-Type: application/json' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password' \
+  -d '{
+    "phone": "62819273192397132@s.whatsapp.net",
+    "message": "Hello World"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": {
+    "message_id": "3EB0B430B6F8F1D0E053AC120E0A9E5C",
+    "status": "Message updated successfully"
+  }
+}
+```
+</ResponseExample>

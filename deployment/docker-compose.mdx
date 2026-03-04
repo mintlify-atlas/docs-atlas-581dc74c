@@ -1,0 +1,605 @@
+---
+title: 'Docker Compose Deployment'
+description: 'Deploy GOWA WhatsApp API using Docker Compose for simplified orchestration'
+icon: 'layer-group'
+---
+
+## Overview
+
+Docker Compose provides a declarative way to configure and run GOWA WhatsApp API with persistent storage, networking, and environment management. It's ideal for production deployments and multi-container setups.
+
+## Quick Start
+
+Create a `docker-compose.yml` file:
+
+<CodeGroup>
+
+```yaml Docker Hub
+services:
+  whatsapp:
+    image: aldinokemal2104/go-whatsapp-web-multidevice
+    container_name: whatsapp
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - whatsapp:/app/storages
+    command:
+      - rest
+      - --port=3000
+
+volumes:
+  whatsapp:
+```
+
+```yaml GitHub Container Registry
+services:
+  whatsapp:
+    image: ghcr.io/aldinokemal/go-whatsapp-web-multidevice
+    container_name: whatsapp
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - whatsapp:/app/storages
+    command:
+      - rest
+      - --port=3000
+
+volumes:
+  whatsapp:
+```
+
+</CodeGroup>
+
+Start the service:
+
+```bash
+docker-compose up -d
+```
+
+## Configuration Methods
+
+### Method 1: Command Arguments
+
+Pass configuration as command-line arguments:
+
+```yaml
+services:
+  whatsapp:
+    image: aldinokemal2104/go-whatsapp-web-multidevice
+    container_name: whatsapp
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - whatsapp:/app/storages
+    command:
+      - rest
+      - --basic-auth=admin:admin
+      - --port=3000
+      - --debug=true
+      - --os=Chrome
+      - --account-validation=false
+
+volumes:
+  whatsapp:
+```
+
+### Method 2: Environment Variables
+
+Use the `environment` section:
+
+```yaml
+services:
+  whatsapp:
+    image: aldinokemal2104/go-whatsapp-web-multidevice
+    container_name: whatsapp
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - whatsapp:/app/storages
+    environment:
+      - APP_BASIC_AUTH=admin:admin
+      - APP_PORT=3000
+      - APP_DEBUG=true
+      - APP_OS=Chrome
+      - WHATSAPP_ACCOUNT_VALIDATION=false
+    command:
+      - rest
+
+volumes:
+  whatsapp:
+```
+
+### Method 3: Environment File
+
+Create a `.env` file and reference it:
+
+<CodeGroup>
+
+```yaml docker-compose.yml
+services:
+  whatsapp:
+    image: aldinokemal2104/go-whatsapp-web-multidevice
+    container_name: whatsapp
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - whatsapp:/app/storages
+    env_file:
+      - .env
+    command:
+      - rest
+
+volumes:
+  whatsapp:
+```
+
+```bash .env
+APP_PORT=3000
+APP_HOST=0.0.0.0
+APP_DEBUG=false
+APP_OS=Chrome
+APP_BASIC_AUTH=admin:admin
+
+WHATSAPP_AUTO_REPLY="Thanks for your message"
+WHATSAPP_AUTO_REJECT_CALL=true
+WHATSAPP_WEBHOOK=https://api.example.com/webhook
+WHATSAPP_WEBHOOK_SECRET=super-secret-key
+```
+
+</CodeGroup>
+
+<Note>
+See [Environment Variables](/deployment/environment-variables) for the complete list of configuration options.
+</Note>
+
+## Production Configuration
+
+### Full-Featured Production Setup
+
+```yaml
+services:
+  whatsapp:
+    image: aldinokemal2104/go-whatsapp-web-multidevice:latest
+    container_name: whatsapp
+    restart: always
+    
+    # Port binding
+    ports:
+      - "127.0.0.1:3000:3000"  # Bind to localhost only
+    
+    # Persistent storage
+    volumes:
+      - whatsapp_data:/app/storages
+    
+    # Environment configuration
+    environment:
+      # Application settings
+      - APP_PORT=3000
+      - APP_HOST=0.0.0.0
+      - APP_DEBUG=false
+      - APP_OS=MyCompany
+      - APP_BASIC_AUTH=admin:${BASIC_AUTH_PASSWORD}
+      - APP_BASE_PATH=
+      - APP_TRUSTED_PROXIES=172.18.0.0/16
+      
+      # Database
+      - DB_URI=file:storages/whatsapp.db?_foreign_keys=on
+      
+      # WhatsApp settings
+      - WHATSAPP_AUTO_REPLY=
+      - WHATSAPP_AUTO_MARK_READ=false
+      - WHATSAPP_AUTO_REJECT_CALL=true
+      - WHATSAPP_AUTO_DOWNLOAD_MEDIA=true
+      - WHATSAPP_ACCOUNT_VALIDATION=false
+      - WHATSAPP_PRESENCE_ON_CONNECT=unavailable
+      
+      # Webhook configuration
+      - WHATSAPP_WEBHOOK=${WEBHOOK_URL}
+      - WHATSAPP_WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - WHATSAPP_WEBHOOK_INSECURE_SKIP_VERIFY=false
+      - WHATSAPP_WEBHOOK_EVENTS=message,message.ack,group.participants
+    
+    # Logging configuration
+    logging:
+      driver: json-file
+      options:
+        max-size: "200k"
+        max-file: "10"
+    
+    # Resource limits (optional)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    
+    command:
+      - rest
+
+volumes:
+  whatsapp_data:
+    driver: local
+```
+
+Create a `.env` file for secrets:
+
+```bash
+BASIC_AUTH_PASSWORD=your-secure-password-here
+WEBHOOK_URL=https://api.example.com/whatsapp/webhook
+WEBHOOK_SECRET=your-webhook-secret-key
+```
+
+Start with:
+
+```bash
+docker-compose --env-file .env up -d
+```
+
+## Advanced Configurations
+
+### With Reverse Proxy (Nginx)
+
+```yaml
+services:
+  whatsapp:
+    image: aldinokemal2104/go-whatsapp-web-multidevice
+    container_name: whatsapp
+    restart: always
+    expose:
+      - "3000"
+    volumes:
+      - whatsapp:/app/storages
+    environment:
+      - APP_PORT=3000
+      - APP_BASIC_AUTH=admin:admin
+    command:
+      - rest
+    networks:
+      - whatsapp_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: whatsapp_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - whatsapp
+    networks:
+      - whatsapp_network
+
+volumes:
+  whatsapp:
+
+networks:
+  whatsapp_network:
+    driver: bridge
+```
+
+Create `nginx.conf`:
+
+```nginx
+server {
+    listen 80;
+    server_name whatsapp.yourdomain.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name whatsapp.yourdomain.com;
+
+    ssl_certificate /etc/nginx/ssl/cert.pem;
+    ssl_certificate_key /etc/nginx/ssl/key.pem;
+
+    location / {
+        proxy_pass http://whatsapp:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+### With PostgreSQL Database
+
+```yaml
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: whatsapp_db
+    restart: always
+    environment:
+      - POSTGRES_USER=whatsapp
+      - POSTGRES_PASSWORD=secure_password
+      - POSTGRES_DB=whatsapp
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - whatsapp_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U whatsapp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  whatsapp:
+    image: aldinokemal2104/go-whatsapp-web-multidevice
+    container_name: whatsapp
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - APP_PORT=3000
+      - DB_URI=postgres://whatsapp:secure_password@postgres:5432/whatsapp?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - whatsapp_network
+    command:
+      - rest
+
+volumes:
+  postgres_data:
+
+networks:
+  whatsapp_network:
+    driver: bridge
+```
+
+### MCP Server Mode
+
+```yaml
+services:
+  whatsapp_mcp:
+    image: aldinokemal2104/go-whatsapp-web-multidevice
+    container_name: whatsapp_mcp
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      - whatsapp:/app/storages
+    environment:
+      - APP_PORT=8080
+      - APP_HOST=0.0.0.0
+    command:
+      - mcp
+      - --port=8080
+
+volumes:
+  whatsapp:
+```
+
+<Warning>
+**Important:** REST and MCP modes cannot run simultaneously due to whatsmeow library limitations. You must choose one mode per instance.
+</Warning>
+
+### Multi-Instance Setup (Multiple Devices)
+
+```yaml
+services:
+  whatsapp_device1:
+    image: aldinokemal2104/go-whatsapp-web-multidevice
+    container_name: whatsapp_device1
+    restart: always
+    ports:
+      - "3001:3000"
+    volumes:
+      - whatsapp_device1:/app/storages
+    environment:
+      - APP_PORT=3000
+      - APP_OS=Device1
+    command:
+      - rest
+
+  whatsapp_device2:
+    image: aldinokemal2104/go-whatsapp-web-multidevice
+    container_name: whatsapp_device2
+    restart: always
+    ports:
+      - "3002:3000"
+    volumes:
+      - whatsapp_device2:/app/storages
+    environment:
+      - APP_PORT=3000
+      - APP_OS=Device2
+    command:
+      - rest
+
+volumes:
+  whatsapp_device1:
+  whatsapp_device2:
+```
+
+<Note>
+Each instance maintains separate WhatsApp sessions and can handle different phone numbers.
+</Note>
+
+## Volume Management
+
+### Named Volumes (Recommended)
+
+```yaml
+volumes:
+  whatsapp:
+    driver: local
+```
+
+Data location: `/var/lib/docker/volumes/`
+
+### Bind Mounts
+
+```yaml
+services:
+  whatsapp:
+    volumes:
+      - ./whatsapp-data:/app/storages
+```
+
+Data stored in `./whatsapp-data` directory.
+
+### Backup Volumes
+
+```bash
+# Backup named volume
+docker run --rm \
+  -v whatsapp:/data \
+  -v $(pwd):/backup \
+  alpine tar czf /backup/whatsapp-backup-$(date +%Y%m%d).tar.gz -C /data .
+
+# Restore from backup
+docker run --rm \
+  -v whatsapp:/data \
+  -v $(pwd):/backup \
+  alpine sh -c "cd /data && tar xzf /backup/whatsapp-backup-20260301.tar.gz"
+```
+
+## Common Operations
+
+### Start Services
+
+```bash
+# Start in foreground
+docker-compose up
+
+# Start in background
+docker-compose up -d
+
+# Start with build
+docker-compose up -d --build
+```
+
+### Stop Services
+
+```bash
+# Stop containers (preserves volumes)
+docker-compose stop
+
+# Stop and remove containers (preserves volumes)
+docker-compose down
+
+# Stop, remove containers and volumes (destroys data)
+docker-compose down -v
+```
+
+### View Logs
+
+```bash
+# Follow all logs
+docker-compose logs -f
+
+# Follow specific service
+docker-compose logs -f whatsapp
+
+# Last 100 lines
+docker-compose logs --tail=100
+```
+
+### Restart Services
+
+```bash
+# Restart all services
+docker-compose restart
+
+# Restart specific service
+docker-compose restart whatsapp
+```
+
+### Update to Latest Version
+
+```bash
+# Pull latest image
+docker-compose pull
+
+# Recreate containers with new image
+docker-compose up -d
+```
+
+### Execute Commands
+
+```bash
+# Open shell in container
+docker-compose exec whatsapp sh
+
+# Run one-off command
+docker-compose exec whatsapp ./whatsapp --help
+```
+
+## Troubleshooting
+
+### Check Service Status
+
+```bash
+docker-compose ps
+```
+
+### View Resource Usage
+
+```bash
+docker stats whatsapp
+```
+
+### Rebuild from Scratch
+
+```bash
+# Stop everything
+docker-compose down
+
+# Remove images
+docker-compose down --rmi all
+
+# Remove volumes (WARNING: destroys data)
+docker-compose down -v
+
+# Start fresh
+docker-compose up -d
+```
+
+### Permission Issues
+
+If you encounter permission errors with bind mounts:
+
+```bash
+# Fix ownership (Linux)
+sudo chown -R 1000:1000 ./whatsapp-data
+
+# Or use named volumes instead of bind mounts
+```
+
+### Port Already in Use
+
+Change the host port in `docker-compose.yml`:
+
+```yaml
+ports:
+  - "8080:3000"  # Map to port 8080 instead
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Environment Variables" icon="sliders" href="/deployment/environment-variables">
+    Complete configuration reference
+  </Card>
+  <Card title="Docker Deployment" icon="docker" href="/deployment/docker">
+    Single-container Docker commands
+  </Card>
+</CardGroup>

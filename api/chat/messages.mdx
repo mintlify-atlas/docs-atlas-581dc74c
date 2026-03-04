@@ -1,0 +1,193 @@
+---
+title: 'Get Chat Messages'
+openapi: 'GET /chat/{chat_jid}/messages'
+---
+
+Retrieve messages from a specific chat conversation with filtering and pagination options.
+
+<Info>
+Messages are returned in reverse chronological order (newest first) by default.
+</Info>
+
+## Request
+
+<ParamField path="chat_jid" type="string" required>
+  Chat JID identifier:
+  - For individual chats: `phone@s.whatsapp.net`
+  - For group chats: `groupid@g.us`
+  
+  Example: `6289685028129@s.whatsapp.net`
+</ParamField>
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="50">
+  Maximum number of messages to return per page (max: 100)
+</ParamField>
+
+<ParamField query="offset" type="integer" default="0">
+  Number of messages to skip for pagination
+</ParamField>
+
+<ParamField query="start_time" type="string">
+  Filter messages from this timestamp (ISO 8601 format)
+  
+  Example: `2024-01-01T00:00:00Z`
+</ParamField>
+
+<ParamField query="end_time" type="string">
+  Filter messages until this timestamp (ISO 8601 format)
+</ParamField>
+
+<ParamField query="media_only" type="boolean" default="false">
+  Only return messages with media content (images, videos, audio, documents)
+</ParamField>
+
+<ParamField query="is_from_me" type="boolean">
+  Filter messages by sender:
+  - `true`: Messages sent by you
+  - `false`: Messages received from others
+  - Omit parameter: All messages
+  
+  Note: When `media_only=true` and `is_from_me=false`, media_only takes precedence
+</ParamField>
+
+<ParamField query="search" type="string">
+  Search messages by text content
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code (e.g., `SUCCESS`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message describing the result
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="data" type="array">
+    Array of message objects
+    
+    <Expandable title="Message Object">
+      <ResponseField name="id" type="string">
+        Message ID
+      </ResponseField>
+      
+      <ResponseField name="chat_jid" type="string">
+        Chat JID this message belongs to
+      </ResponseField>
+      
+      <ResponseField name="sender_jid" type="string">
+        Sender JID
+      </ResponseField>
+      
+      <ResponseField name="content" type="string">
+        Message text content
+      </ResponseField>
+      
+      <ResponseField name="timestamp" type="string">
+        Message timestamp (ISO 8601 format)
+      </ResponseField>
+      
+      <ResponseField name="is_from_me" type="boolean">
+        Whether this message was sent by the current user
+      </ResponseField>
+      
+      <ResponseField name="media_type" type="string" nullable>
+        Type of media (image, video, audio, document, etc.)
+      </ResponseField>
+      
+      <ResponseField name="filename" type="string" nullable>
+        Original filename for media messages
+      </ResponseField>
+      
+      <ResponseField name="url" type="string" nullable>
+        Media file URL
+      </ResponseField>
+      
+      <ResponseField name="file_length" type="integer" nullable>
+        File size in bytes for media messages
+      </ResponseField>
+      
+      <ResponseField name="created_at" type="string">
+        Record creation timestamp
+      </ResponseField>
+      
+      <ResponseField name="updated_at" type="string">
+        Record last update timestamp
+      </ResponseField>
+    </Expandable>
+  </ResponseField>
+  
+  <ResponseField name="pagination" type="object">
+    <ResponseField name="limit" type="integer">
+      Number of items per page
+    </ResponseField>
+    
+    <ResponseField name="offset" type="integer">
+      Current offset
+    </ResponseField>
+    
+    <ResponseField name="total" type="integer">
+      Total number of messages
+    </ResponseField>
+  </ResponseField>
+  
+  <ResponseField name="chat_info" type="object">
+    Information about the chat (same structure as chat object in list endpoint)
+  </ResponseField>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X GET \
+  'https://your-api-domain.com/chat/6289685028129@s.whatsapp.net/messages?limit=50&offset=0&media_only=false' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "code": "SUCCESS",
+  "message": "Success get chat messages",
+  "results": {
+    "data": [
+      {
+        "id": "3EB0B430B6F8F1D0E053AC120E0A9E5C",
+        "chat_jid": "6289685028129@s.whatsapp.net",
+        "sender_jid": "6289685028129@s.whatsapp.net",
+        "content": "Hello, how are you?",
+        "timestamp": "2024-01-15T10:30:00Z",
+        "is_from_me": false,
+        "media_type": null,
+        "filename": null,
+        "url": null,
+        "file_length": null,
+        "created_at": "2024-01-15T10:30:00Z",
+        "updated_at": "2024-01-15T10:30:00Z"
+      }
+    ],
+    "pagination": {
+      "limit": 50,
+      "offset": 0,
+      "total": 1250
+    },
+    "chat_info": {
+      "jid": "6289685028129@s.whatsapp.net",
+      "name": "John Doe",
+      "last_message_time": "2024-01-15T10:30:00Z",
+      "ephemeral_expiration": 0,
+      "created_at": "2024-01-10T08:00:00Z",
+      "updated_at": "2024-01-15T10:30:00Z",
+      "archived": false
+    }
+  }
+}
+```
+</ResponseExample>

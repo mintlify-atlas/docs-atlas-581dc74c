@@ -1,0 +1,161 @@
+---
+title: 'Connection Status'
+api: 'GET /app/status'
+description: 'Check the current connection and login status of your WhatsApp device'
+---
+
+Retrieve the current status of your WhatsApp connection to verify if the device is connected and logged in.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Basic authentication credentials (username:password in base64)
+</ParamField>
+
+## Headers
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="integer">
+  HTTP status code
+  
+  **Example:** `200`
+</ResponseField>
+
+<ResponseField name="code" type="string">
+  Response code indicating success or failure
+  
+  **Example:** `SUCCESS`
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message
+  
+  **Example:** `Connection status retrieved`
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  Connection status details
+  
+  <ResponseField name="is_connected" type="boolean">
+    Whether the device is connected to WhatsApp servers
+    
+    **Example:** `true`
+  </ResponseField>
+  
+  <ResponseField name="is_logged_in" type="boolean">
+    Whether the device is logged in to WhatsApp
+    
+    **Example:** `true`
+  </ResponseField>
+  
+  <ResponseField name="device_id" type="string">
+    The device identifier (JID format)
+    
+    **Example:** `6289685028129@s.whatsapp.net`
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET 'http://localhost:3000/app/status' \
+  -u 'username:password' \
+  -H 'X-Device-Id: my-device-id'
+```
+
+```javascript JavaScript
+const response = await fetch('http://localhost:3000/app/status', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Basic ' + btoa('username:password'),
+    'X-Device-Id': 'my-device-id'
+  }
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+import base64
+
+username = 'username'
+password = 'password'
+credentials = base64.b64encode(f'{username}:{password}'.encode()).decode()
+
+response = requests.get(
+    'http://localhost:3000/app/status',
+    headers={
+        'Authorization': f'Basic {credentials}',
+        'X-Device-Id': 'my-device-id'
+    }
+)
+
+print(response.json())
+```
+
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "status": 200,
+  "code": "SUCCESS",
+  "message": "Connection status retrieved",
+  "results": {
+    "is_connected": true,
+    "is_logged_in": true,
+    "device_id": "6289685028129@s.whatsapp.net"
+  }
+}
+```
+
+## Error Responses
+
+<ResponseField name="400" type="object">
+  Bad Request
+  
+  ```json
+  {
+    "code": "400",
+    "message": "Invalid device ID",
+    "results": null
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500" type="object">
+  Internal Server Error
+  
+  ```json
+  {
+    "code": "INTERNAL_SERVER_ERROR",
+    "message": "Failed to retrieve status",
+    "results": null
+  }
+  ```
+</ResponseField>
+
+## Status States
+
+| is_connected | is_logged_in | Meaning |
+|--------------|--------------|----------|
+| `false` | `false` | Device is not connected or logged in |
+| `true` | `false` | Device is connected but not logged in |
+| `true` | `true` | Device is fully operational |
+
+## Usage Notes
+
+- Use this endpoint to verify connection before sending messages
+- Poll this endpoint periodically to monitor connection health
+- If `is_logged_in` is `false`, you need to login again
+- The `device_id` returned is in JID format (WhatsApp identifier)

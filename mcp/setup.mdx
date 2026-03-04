@@ -1,0 +1,218 @@
+---
+title: MCP Server Setup
+description: How to run the GOWA WhatsApp MCP server and connect from AI tools
+---
+
+## Running the MCP Server
+
+### Prerequisites
+
+Before running the MCP server, ensure you have:
+
+- **Go 1.24.0 or higher** (for building from source)
+- **FFmpeg** installed (for media processing)
+- **libwebp** installed (for sticker support)
+
+See the [Requirements](/introduction#requirements) page for platform-specific installation instructions.
+
+### Starting the Server
+
+<Tabs>
+  <Tab title="From Source">
+    ```bash
+    cd src
+    go run . mcp
+    ```
+  </Tab>
+  <Tab title="Binary">
+    ```bash
+    # Linux/macOS
+    ./whatsapp mcp
+
+    # Windows
+    .\whatsapp.exe mcp
+    ```
+  </Tab>
+  <Tab title="Docker">
+    ```bash
+    docker run --rm -p 8080:8080 \
+      aldinokemal2104/go-whatsapp-web-multidevice mcp
+    ```
+  </Tab>
+</Tabs>
+
+### Server Options
+
+Customize the MCP server host and port:
+
+```bash
+./whatsapp mcp --host localhost --port 8080
+```
+
+| Flag | Description | Default |
+|------|-------------|----------|
+| `--host` | Host address to bind the MCP server | `localhost` |
+| `--port` | Port for the SSE MCP server | `8080` |
+
+<Note>
+For security, the MCP server defaults to `localhost` and should only be exposed to trusted networks.
+</Note>
+
+## MCP Endpoints
+
+Once started, the MCP server exposes two primary endpoints:
+
+### SSE Endpoint
+```
+http://localhost:8080/sse
+```
+
+This is the **Server-Sent Events** endpoint that MCP clients connect to. It provides:
+- Real-time bidirectional communication
+- Tool discovery and invocation
+- Streaming responses
+
+### Message Endpoint  
+```
+http://localhost:8080/message
+```
+
+Used internally by the MCP protocol for sending tool invocations from the client to the server.
+
+## Verifying Server Status
+
+When the server starts successfully, you should see:
+
+```bash
+Starting WhatsApp MCP SSE server on localhost:8080
+SSE endpoint: http://localhost:8080/sse
+Message endpoint: http://localhost:8080/message
+```
+
+## Connecting from AI Tools
+
+After the server is running, configure your AI tool to connect to the MCP server:
+
+<CardGroup cols={2}>
+  <Card title="Cursor" icon="code">
+    Add the SSE URL to your Cursor MCP configuration
+  </Card>
+  <Card title="Claude Desktop" icon="desktop">
+    Configure via claude_desktop_config.json
+  </Card>
+  <Card title="Other MCP Clients" icon="plug">
+    Any MCP-compatible tool can connect via SSE
+  </Card>
+</CardGroup>
+
+See the [Configuration](/mcp/configuration) page for detailed setup instructions for each client.
+
+## Device Management
+
+### Single Device Setup
+
+If you have only one WhatsApp device registered, the MCP server will automatically use it for all operations. No additional configuration is needed.
+
+### Multi-Device Setup
+
+For multi-device deployments, the MCP server uses the **first registered device** by default. This is determined by:
+
+1. Fetching all registered devices via the device manager
+2. Selecting `devices[0].Device` as the default
+3. Injecting this device into the context for all tool calls
+
+The device resolution logic is in `src/ui/mcp/helpers/context.go:10-25`:
+
+```go
+func ContextWithDefaultDevice(ctx context.Context) (context.Context, error) {
+    mgr := whatsapp.GetDeviceManager()
+    inst, _, err := mgr.ResolveDevice("")  // Empty string = use default
+    return whatsapp.ContextWithDevice(ctx, inst), nil
+}
+```
+
+<Warning>
+Currently, the MCP server does **not** support per-tool device selection. All tools operate on the default device. Multi-device support for MCP is planned for a future release.
+</Warning>
+
+## WhatsApp Authentication
+
+Before you can send messages via MCP, you must authenticate your WhatsApp account:
+
+### Login via QR Code
+
+Use the `whatsapp_login_qr` tool from your AI client:
+
+```
+whatsapp_login_qr
+```
+
+The tool returns:
+- QR code image (base64 encoded)
+- Pairing code
+- Expiration time
+
+Scan the QR code with WhatsApp mobile app (Linked Devices).
+
+### Login via Pairing Code
+
+Use the `whatsapp_login_with_code` tool:
+
+```
+whatsapp_login_with_code(phone="+628123456789")
+```
+
+The tool generates an 8-character pairing code. Enter it in WhatsApp mobile app under Linked Devices > Link a Device > Link with phone number.
+
+### Check Connection Status
+
+Verify authentication with:
+
+```
+whatsapp_connection_status
+```
+
+Returns:
+```json
+{
+  "is_connected": true,
+  "is_logged_in": true,
+  "device_id": "628123456789@s.whatsapp.net"
+}
+```
+
+## Troubleshooting
+
+### Server Won't Start
+
+**Error**: `address already in use`
+
+**Solution**: Another process is using port 8080. Either:
+- Stop the other process
+- Use a different port: `./whatsapp mcp --port 9000`
+
+### MCP Client Can't Connect
+
+**Error**: `connection refused`
+
+**Solution**:
+- Verify the server is running
+- Check firewall settings
+- Ensure the host/port match your client configuration
+
+### No Devices Registered
+
+**Error**: `no devices registered`
+
+**Solution**: You must authenticate at least one WhatsApp account before using MCP tools. Use `whatsapp_login_qr` or `whatsapp_login_with_code`.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Configuration Examples" icon="gear" href="/mcp/configuration">
+    See detailed client configuration for Cursor, Claude Desktop, and more
+  </Card>
+  <Card title="Connection Tools" icon="plug" href="/mcp/tools/connection">
+    Learn about login, logout, and reconnect tools
+  </Card>
+</CardGroup>

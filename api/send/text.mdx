@@ -1,0 +1,249 @@
+---
+title: 'Send Text Message'
+openapi: 'POST /send/message'
+---
+
+Send a text message to a WhatsApp number or group. Supports replies, forwarding, disappearing messages, and mentions.
+
+<Note>
+This endpoint supports both regular text messages and advanced features like ghost mentions and @everyone mentions for groups.
+</Note>
+
+## Endpoint
+
+```
+POST /send/message
+```
+
+## Headers
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default. Can also be provided as `device_id` query parameter.
+</ParamField>
+
+## Request Body
+
+<ParamField body="phone" type="string" required>
+  Phone number with country code and WhatsApp suffix.
+  
+  **Format:** `{country_code}{phone_number}@s.whatsapp.net`
+  
+  **Example:** `6289685028129@s.whatsapp.net`
+</ParamField>
+
+<ParamField body="message" type="string" required>
+  The text message content to send.
+  
+  **Example:** `"Hello, how are you?"`
+</ParamField>
+
+<ParamField body="reply_message_id" type="string">
+  Message ID to reply to. Use this to create a quoted reply to a previous message.
+  
+  **Example:** `"3EB089B9D6ADD58153C561"`
+</ParamField>
+
+<ParamField body="is_forwarded" type="boolean" default={false}>
+  Mark the message as forwarded. When set to `true`, the message will display a "Forwarded" label.
+</ParamField>
+
+<ParamField body="duration" type="integer">
+  Disappearing message duration in seconds. The message will automatically delete after this duration.
+  
+  **Common values:**
+  - `86400` - 24 hours
+  - `604800` - 7 days
+  - `7776000` - 90 days
+  
+  **Example:** `3600` (1 hour)
+</ParamField>
+
+<ParamField body="mentions" type="array">
+  List of phone numbers to mention (ghost mentions - no @ required in message text). Use special keyword `"@everyone"` to mention all group participants.
+  
+  **Format:** Array of phone numbers (without country code prefix or @s.whatsapp.net suffix)
+  
+  **Examples:**
+  - `["628123456789", "628987654321"]` - Mention specific users
+  - `["@everyone"]` - Mention all group members
+  
+  <Info>
+  Ghost mentions allow you to mention users without including "@" in the message text. The mentioned users will still receive a notification.
+  </Info>
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response status code. Returns `"SUCCESS"` on successful message send.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message.
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="message_id" type="string">
+    Unique identifier for the sent message. Use this ID for message operations like revoke, react, or delete.
+    
+    **Example:** `"3EB0B430B6F8F1D0E053AC120E0A9E5C"`
+  </ResponseField>
+  
+  <ResponseField name="status" type="string">
+    Detailed status message about the send operation.
+  </ResponseField>
+</ResponseField>
+
+## Code Examples
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST http://localhost:3000/send/message \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685028129@s.whatsapp.net",
+    "message": "Hello! This is a test message."
+  }'
+```
+
+```bash cURL with Reply
+curl -X POST http://localhost:3000/send/message \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685028129@s.whatsapp.net",
+    "message": "This is a reply to your message",
+    "reply_message_id": "3EB089B9D6ADD58153C561"
+  }'
+```
+
+```bash cURL with Mentions
+curl -X POST http://localhost:3000/send/message \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "120363025982934543@g.us",
+    "message": "Hello everyone!",
+    "mentions": ["@everyone"]
+  }'
+```
+
+```bash cURL with Ghost Mentions
+curl -X POST http://localhost:3000/send/message \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "120363025982934543@g.us",
+    "message": "Important announcement for the team!",
+    "mentions": ["628123456789", "628987654321"]
+  }'
+```
+
+```bash cURL with Disappearing Message
+curl -X POST http://localhost:3000/send/message \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685028129@s.whatsapp.net",
+    "message": "This message will disappear in 1 hour",
+    "duration": 3600
+  }'
+```
+
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": {
+    "message_id": "3EB0B430B6F8F1D0E053AC120E0A9E5C",
+    "status": "Message sent successfully"
+  }
+}
+```
+
+## Error Responses
+
+<ResponseField name="400" type="Bad Request">
+  Invalid request parameters. Check that phone number format is correct and required fields are provided.
+</ResponseField>
+
+<ResponseField name="500" type="Internal Server Error">
+  Server error or device not connected. Ensure the device is logged in and connected to WhatsApp.
+</ResponseField>
+
+## Features
+
+### Ghost Mentions
+
+Ghost mentions allow you to notify specific users without displaying the "@" symbol in the message text:
+
+```json
+{
+  "phone": "120363025982934543@g.us",
+  "message": "Hey team, please check the latest update!",
+  "mentions": ["628123456789", "628987654321"]
+}
+```
+
+The mentioned users will receive a notification, but the message text appears normal without @ symbols.
+
+### @everyone Mention
+
+Mention all participants in a group chat:
+
+```json
+{
+  "phone": "120363025982934543@g.us",
+  "message": "Important: Meeting at 3 PM today!",
+  "mentions": ["@everyone"]
+}
+```
+
+All group members will receive a notification for this message.
+
+### Disappearing Messages
+
+Send messages that automatically delete after a specified duration:
+
+```json
+{
+  "phone": "6289685028129@s.whatsapp.net",
+  "message": "Sensitive information here",
+  "duration": 86400
+}
+```
+
+Common duration values:
+- 24 hours: `86400` seconds
+- 7 days: `604800` seconds  
+- 90 days: `7776000` seconds
+
+<Warning>
+Disappearing messages require both sender and recipient to have this feature supported in their WhatsApp client.
+</Warning>
+
+## Best Practices
+
+1. **Phone Number Format**: Always include the country code and `@s.whatsapp.net` suffix for individual chats, or `@g.us` for groups.
+
+2. **Message Length**: WhatsApp supports messages up to 65,536 characters, but keep messages concise for better user experience.
+
+3. **Rate Limiting**: Implement rate limiting to avoid being flagged for spam. WhatsApp may temporarily ban accounts sending too many messages.
+
+4. **Error Handling**: Always check the response status and implement retry logic for failed messages.
+
+5. **Mentions**: Use ghost mentions sparingly. Overusing mentions can annoy users and may be considered spam.
+
+## Related Endpoints
+
+- [Send Image](/api/send/image) - Send images with captions
+- [Send Video](/api/send/video) - Send video messages
+- [Send Link](/api/send/link) - Send links with preview
+- [Revoke Message](/api/message/revoke) - Delete sent messages
+- [React to Message](/api/message/react) - Add emoji reactions

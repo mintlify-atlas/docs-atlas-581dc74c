@@ -1,0 +1,72 @@
+---
+title: 'Mark Message as Read'
+openapi: 'POST /message/{message_id}/read'
+---
+
+Mark a message as read in a chat. This will update the read status and send read receipts to the sender.
+
+<Info>
+This endpoint marks a specific message and all messages before it as read in the conversation.
+</Info>
+
+## Request
+
+<ParamField path="message_id" type="string" required>
+  The unique identifier of the message to mark as read
+</ParamField>
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+<ParamField body="phone" type="string" required>
+  Phone number with country code and WhatsApp suffix
+  
+  Example: `62819273192397132@s.whatsapp.net`
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code (e.g., `SUCCESS`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message describing the result
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="message_id" type="string">
+    The ID of the message marked as read
+  </ResponseField>
+  
+  <ResponseField name="status" type="string">
+    Status of the read operation
+  </ResponseField>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X POST \
+  'https://your-api-domain.com/message/3EB0B430B6F8F1D0E053AC120E0A9E5C/read' \
+  -H 'Content-Type: application/json' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password' \
+  -d '{
+    "phone": "62819273192397132@s.whatsapp.net"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": {
+    "message_id": "3EB0B430B6F8F1D0E053AC120E0A9E5C",
+    "status": "Message marked as read"
+  }
+}
+```
+</ResponseExample>

@@ -1,0 +1,487 @@
+---
+title: 'Receiving Messages'
+description: 'Handle incoming messages with webhooks, auto-reply, and auto-read features'
+icon: 'webhook'
+---
+
+## Overview
+
+GOWA WhatsApp API provides webhook-based message receiving with configurable auto-reply, auto-read, and auto-download features. All incoming events are forwarded to your webhook endpoint in real-time.
+
+## Webhook Configuration
+
+### Setting Up Webhooks
+
+Configure webhook URLs via environment variables or CLI flags:
+
+<CodeGroup>
+```bash Environment Variable
+export WHATSAPP_WEBHOOK="https://yourapp.com/webhook"
+export WHATSAPP_WEBHOOK_SECRET="your-secret-key"
+```
+
+```bash CLI Flags
+./whatsapp rest \
+  --webhook="https://yourapp.com/webhook" \
+  --webhook-secret="your-secret-key"
+```
+
+```yaml Docker Compose
+services:
+  whatsapp:
+    image: aldinokemal2104/go-whatsapp-web-multidevice
+    environment:
+      - WHATSAPP_WEBHOOK=https://yourapp.com/webhook
+      - WHATSAPP_WEBHOOK_SECRET=your-secret-key
+```
+</CodeGroup>
+
+### Multiple Webhooks
+
+Forward events to multiple endpoints (comma-separated):
+
+```bash
+export WHATSAPP_WEBHOOK="https://app1.com/webhook,https://app2.com/webhook"
+```
+
+## Webhook Security
+
+### HMAC Signature Verification
+
+All webhook requests include an `X-Hub-Signature-256` header for security:
+
+<CodeGroup>
+```javascript Node.js/Express
+const crypto = require('crypto');
+const express = require('express');
+const app = express();
+
+app.use(express.raw({type: 'application/json'}));
+
+app.post('/webhook', (req, res) => {
+  const signature = req.headers['x-hub-signature-256'];
+  const payload = req.body;
+  const secret = 'your-secret-key';
+
+  // Verify signature
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(payload, 'utf8')
+    .digest('hex');
+
+  const receivedSignature = signature.replace('sha256=', '');
+  
+  if (!crypto.timingSafeEqual(
+    Buffer.from(expectedSignature, 'hex'),
+    Buffer.from(receivedSignature, 'hex')
+  )) {
+    return res.status(401).send('Unauthorized');
+  }
+
+  // Process webhook
+  const data = JSON.parse(payload);
+  console.log('Received event:', data.event);
+  
+  res.status(200).send('OK');
+});
+```
+
+```python Python/Flask
+import hmac
+import hashlib
+from flask import Flask, request
+
+app = Flask(__name__)
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    signature = request.headers.get('X-Hub-Signature-256')
+    payload = request.get_data()
+    secret = 'your-secret-key'
+    
+    # Verify signature
+    expected_signature = hmac.new(
+        secret.encode('utf-8'),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    
+    received_signature = signature.replace('sha256=', '')
+    
+    if not hmac.compare_digest(expected_signature, received_signature):
+        return 'Unauthorized', 401
+    
+    # Process webhook
+    data = request.json
+    print(f"Received event: {data['event']}")
+    
+    return 'OK', 200
+```
+
+```go Go
+import (
+    "crypto/hmac"
+    "crypto/sha256"
+    "encoding/hex"
+    "io"
+    "net/http"
+    "strings"
+)
+
+func webhookHandler(w http.ResponseWriter, r *http.Request) {
+    signature := r.Header.Get("X-Hub-Signature-256")
+    body, _ := io.ReadAll(r.Body)
+    secret := "your-secret-key"
+
+    // Verify signature
+    mac := hmac.New(sha256.New, []byte(secret))
+    mac.Write(body)
+    expectedSignature := hex.EncodeToString(mac.Sum(nil))
+    
+    receivedSignature := strings.TrimPrefix(signature, "sha256=")
+    
+    if !hmac.Equal([]byte(expectedSignature), []byte(receivedSignature)) {
+        http.Error(w, "Unauthorized", http.StatusUnauthorized)
+        return
+    }
+
+    // Process webhook
+    w.WriteHeader(http.StatusOK)
+}
+```
+</CodeGroup>
+
+<Warning>
+  Always verify webhook signatures to prevent unauthorized requests. Never skip this step in production.
+</Warning>
+
+## Webhook Events
+
+### Event Filtering
+
+Control which events are forwarded to your webhook:
+
+```bash
+export WHATSAPP_WEBHOOK_EVENTS="message,message.ack,group.participants"
+```
+
+<ParamField path="WHATSAPP_WEBHOOK_EVENTS" type="string">
+  Comma-separated list of events to forward. If empty, all events are forwarded.
+</ParamField>
+
+### Available Events
+
+| Event | Description |
+|-------|-------------|
+| `message` | Text, media, contact, location messages |
+| `message.reaction` | Emoji reactions to messages |
+| `message.revoked` | Deleted/revoked messages (Delete for Everyone) |
+| `message.edited` | Edited messages |
+| `message.ack` | Delivery and read receipts |
+| `message.deleted` | Messages deleted for current user (Delete for Me) |
+| `group.participants` | Group member join/leave/promote/demote |
+| `group.joined` | You were added to a group |
+| `newsletter.joined` | You subscribed to a newsletter/channel |
+| `newsletter.left` | You unsubscribed from a newsletter |
+| `newsletter.message` | New messages in subscribed newsletters |
+| `newsletter.mute` | Newsletter mute setting changed |
+| `call.offer` | Incoming call received |
+
+## Webhook Payload Structure
+
+All webhooks follow this format:
+
+```json
+{
+  "event": "message",
+  "device_id": "628123456789@s.whatsapp.net",
+  "payload": {
+    // Event-specific data
+  }
+}
+```
+
+### Text Message Example
+
+```json
+{
+  "event": "message",
+  "device_id": "628987654321@s.whatsapp.net",
+  "payload": {
+    "id": "3EB0C127D7BACC83D6A1",
+    "chat_id": "628987654321@s.whatsapp.net",
+    "from": "628123456789@s.whatsapp.net",
+    "from_name": "John Doe",
+    "timestamp": "2024-03-04T10:30:00Z",
+    "is_from_me": false,
+    "body": "Hello, how are you?"
+  }
+}
+```
+
+### Delivery Receipt Example
+
+```json
+{
+  "event": "message.ack",
+  "device_id": "628123456789@s.whatsapp.net",
+  "timestamp": "2024-03-04T10:30:15Z",
+  "payload": {
+    "ids": ["3EB00106E8BE0F407E88EC"],
+    "chat_id": "120363402106XXXXX@g.us",
+    "from": "6289685XXXXXX@s.whatsapp.net",
+    "receipt_type": "delivered",
+    "receipt_type_description": "means the message was delivered to the device"
+  }
+}
+```
+
+### Group Event Example
+
+```json
+{
+  "event": "group.participants",
+  "device_id": "628123456789@s.whatsapp.net",
+  "timestamp": "2024-03-04T10:35:00Z",
+  "payload": {
+    "chat_id": "120363402106XXXXX@g.us",
+    "type": "join",
+    "jids": ["6289685XXXXXX@s.whatsapp.net"]
+  }
+}
+```
+
+<Info>
+  See the complete [Webhook Payload Documentation](https://github.com/aldinokemal/go-whatsapp-web-multidevice/blob/main/docs/webhook-payload.md) for all event types.
+</Info>
+
+## Auto-Reply
+
+Automatically respond to all incoming messages:
+
+<CodeGroup>
+```bash Environment Variable
+export WHATSAPP_AUTO_REPLY="Thank you for your message. We'll respond soon."
+```
+
+```bash CLI Flag
+./whatsapp rest --autoreply="Thank you for your message. We'll respond soon."
+```
+</CodeGroup>
+
+<Warning>
+  Auto-reply sends a response to **every** incoming message, including group messages. Use carefully to avoid spam.
+</Warning>
+
+## Auto-Read Messages
+
+Automatically mark incoming messages as read:
+
+```bash
+export WHATSAPP_AUTO_MARK_READ=true
+```
+
+<ParamField path="WHATSAPP_AUTO_MARK_READ" type="boolean" default="false">
+  When enabled, all incoming messages are immediately marked as read (blue checkmarks).
+</ParamField>
+
+### Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Customer Service Bot" icon="robot">
+    Enable auto-read for bots that process messages programmatically.
+  </Card>
+  
+  <Card title="Notification Channels" icon="bell">
+    Disable auto-read to preserve unread counts for human agents.
+  </Card>
+</CardGroup>
+
+## Auto-Download Media
+
+Control automatic media downloads from incoming messages:
+
+```bash
+export WHATSAPP_AUTO_DOWNLOAD_MEDIA=true  # Default
+```
+
+<Tabs>
+  <Tab title="Enabled (Default)">
+    Media files are automatically downloaded to `statics/media/` directory:
+    
+    ```json
+    {
+      "event": "message",
+      "payload": {
+        "id": "3EB0C127D7BACC83D6A3",
+        "image": "statics/media/1752404751-ad9e37ac.jpeg"
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Disabled">
+    Media URLs are provided instead:
+    
+    ```json
+    {
+      "event": "message",
+      "payload": {
+        "id": "3EB0C127D7BACC83D6A3",
+        "image": {
+          "url": "https://mmg.whatsapp.net/...",
+          "caption": "Check this out!"
+        }
+      }
+    }
+    ```
+    
+    Download manually using `/message/{message_id}/download` endpoint.
+  </Tab>
+</Tabs>
+
+<Warning>
+  Downloaded media files accumulate in `statics/media/`. Implement cleanup jobs to manage disk space.
+</Warning>
+
+## Webhook Retry Behavior
+
+The API implements exponential backoff for webhook delivery:
+
+<Steps>
+  <Step title="Initial Request">
+    10-second timeout per request.
+  </Step>
+  
+  <Step title="Retry on Failure">
+    Up to 5 retry attempts with exponential backoff: 1s, 2s, 4s, 8s, 16s.
+  </Step>
+  
+  <Step title="Success Criteria">
+    HTTP status 200-299 indicates successful delivery.
+  </Step>
+</Steps>
+
+### Webhook Best Practices
+
+<AccordionGroup>
+  <Accordion title="Respond Quickly">
+    Return HTTP 200 within 10 seconds. Process heavy tasks asynchronously:
+    
+    ```javascript
+    app.post('/webhook', async (req, res) => {
+      // Return success immediately
+      res.status(200).send('OK');
+      
+      // Process asynchronously
+      processWebhookAsync(req.body).catch(console.error);
+    });
+    ```
+  </Accordion>
+  
+  <Accordion title="Handle Duplicates">
+    Network issues may cause duplicate webhook deliveries. Use message IDs for deduplication:
+    
+    ```javascript
+    const processedIds = new Set();
+    
+    if (processedIds.has(data.payload.id)) {
+      return; // Skip duplicate
+    }
+    processedIds.add(data.payload.id);
+    ```
+  </Accordion>
+  
+  <Accordion title="Use HTTPS">
+    Always use HTTPS webhook URLs in production to secure data transmission.
+  </Accordion>
+</AccordionGroup>
+
+## TLS Certificate Verification
+
+For self-signed certificates or Cloudflare tunnels:
+
+```bash
+export WHATSAPP_WEBHOOK_INSECURE_SKIP_VERIFY=true
+```
+
+<Warning>
+  **Security Risk:** Disabling TLS verification removes protection against man-in-the-middle attacks. Only use in:
+  - Development/testing environments
+  - Cloudflare tunnels (which provide their own security layer)
+  - Internal networks with self-signed certificates
+  
+  **For production:** Use proper SSL certificates (e.g., Let's Encrypt).
+</Warning>
+
+## Complete Example
+
+Full webhook handler with event processing:
+
+```javascript
+const express = require('express');
+const crypto = require('crypto');
+const app = express();
+
+app.use(express.raw({type: 'application/json'}));
+
+app.post('/webhook', (req, res) => {
+  // Verify signature
+  const signature = req.headers['x-hub-signature-256'];
+  const expectedSig = crypto
+    .createHmac('sha256', 'your-secret-key')
+    .update(req.body, 'utf8')
+    .digest('hex');
+  
+  if (signature !== `sha256=${expectedSig}`) {
+    return res.status(401).send('Unauthorized');
+  }
+
+  // Parse event
+  const data = JSON.parse(req.body);
+  
+  // Route by event type
+  switch (data.event) {
+    case 'message':
+      handleMessage(data.payload);
+      break;
+    case 'message.ack':
+      handleReceipt(data.payload);
+      break;
+    case 'group.participants':
+      handleGroupEvent(data.payload);
+      break;
+  }
+  
+  res.status(200).send('OK');
+});
+
+function handleMessage(payload) {
+  console.log(`Message from ${payload.from}: ${payload.body}`);
+  
+  // Auto-respond to specific keywords
+  if (payload.body.toLowerCase().includes('help')) {
+    // Send help message using API
+  }
+}
+
+app.listen(3001);
+```
+
+## Configuration Summary
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `WHATSAPP_WEBHOOK` | - | Webhook URL(s) (comma-separated) |
+| `WHATSAPP_WEBHOOK_SECRET` | `secret` | HMAC signature secret |
+| `WHATSAPP_WEBHOOK_EVENTS` | (all) | Event filter (comma-separated) |
+| `WHATSAPP_WEBHOOK_INSECURE_SKIP_VERIFY` | `false` | Skip TLS verification |
+| `WHATSAPP_AUTO_REPLY` | - | Auto-reply message text |
+| `WHATSAPP_AUTO_MARK_READ` | `false` | Auto-mark messages as read |
+| `WHATSAPP_AUTO_DOWNLOAD_MEDIA` | `true` | Auto-download media files |
+
+## See Also
+
+- [Sending Messages](/guides/sending-messages) — Send text and media messages
+- [Media Handling](/guides/media-handling) — Work with images, videos, and files
+- [Configuration](/guides/configuration) — Complete environment variable reference

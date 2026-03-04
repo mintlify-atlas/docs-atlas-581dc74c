@@ -1,0 +1,88 @@
+---
+title: 'Pin/Unpin Chat'
+openapi: 'POST /chat/{chat_jid}/pin'
+---
+
+Pin or unpin a chat conversation to the top of the chat list. Pinned chats remain at the top for easy access.
+
+<Note>
+WhatsApp allows a maximum of 3 pinned chats at a time. Attempting to pin more than 3 chats will fail.
+</Note>
+
+## Request
+
+<ParamField path="chat_jid" type="string" required>
+  Chat JID identifier:
+  - For individual chats: `phone@s.whatsapp.net`
+  - For group chats: `groupid@g.us`
+  
+  Example: `6289685028129@s.whatsapp.net`
+</ParamField>
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+<ParamField body="pinned" type="boolean" required>
+  Whether to pin (`true`) or unpin (`false`) the chat
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code (e.g., `SUCCESS`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message describing the result
+  
+  Example: `Chat pinned successfully`
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="status" type="string">
+    Status of the operation
+    
+    Example: `success`
+  </ResponseField>
+  
+  <ResponseField name="message" type="string">
+    Detailed status message
+  </ResponseField>
+  
+  <ResponseField name="chat_jid" type="string">
+    The JID of the affected chat
+  </ResponseField>
+  
+  <ResponseField name="pinned" type="boolean">
+    The new pinned status
+  </ResponseField>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X POST \
+  'https://your-api-domain.com/chat/6289685028129@s.whatsapp.net/pin' \
+  -H 'Content-Type: application/json' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password' \
+  -d '{
+    "pinned": true
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "code": "SUCCESS",
+  "message": "Chat pinned successfully",
+  "results": {
+    "status": "success",
+    "message": "Chat pinned successfully",
+    "chat_jid": "6289685028129@s.whatsapp.net",
+    "pinned": true
+  }
+}
+```
+</ResponseExample>

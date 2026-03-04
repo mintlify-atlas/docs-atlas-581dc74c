@@ -1,0 +1,456 @@
+---
+title: 'Send Contact'
+openapi: 'POST /send/contact'
+---
+
+Send a contact card to a WhatsApp number or group. Recipients can easily save the contact to their phone.
+
+<Note>
+Contact cards appear as interactive elements in WhatsApp with an "Add to Contacts" button, making it easy for recipients to save the information.
+</Note>
+
+## Endpoint
+
+```
+POST /send/contact
+```
+
+## Headers
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered.
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Request Body
+
+<ParamField body="phone" type="string" required>
+  Phone number with country code and WhatsApp suffix of the recipient.
+  
+  **Format:** `{country_code}{phone_number}@s.whatsapp.net`
+  
+  **Example:** `6289685024051@s.whatsapp.net`
+</ParamField>
+
+<ParamField body="contact_name" type="string" required>
+  Display name for the contact being shared.
+  
+  **Example:** `"Aldino Kemal"`
+</ParamField>
+
+<ParamField body="contact_phone" type="string" required>
+  Phone number of the contact being shared (without WhatsApp suffix).
+  
+  **Format:** `{country_code}{phone_number}` (numbers only, no special characters)
+  
+  **Example:** `"6289685024992"`
+</ParamField>
+
+<ParamField body="is_forwarded" type="boolean" default={false}>
+  Mark the message as forwarded.
+</ParamField>
+
+<ParamField body="duration" type="integer">
+  Disappearing message duration in seconds (optional).
+  
+  **Common values:**
+  - `86400` - 24 hours
+  - `604800` - 7 days
+  - `7776000` - 90 days
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response status code. Returns `"SUCCESS"` on successful send.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message.
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="message_id" type="string">
+    Unique identifier for the sent message.
+    
+    **Example:** `"3EB0B430B6F8F1D0E053AC120E0A9E5C"`
+  </ResponseField>
+  
+  <ResponseField name="status" type="string">
+    Detailed status message.
+  </ResponseField>
+</ResponseField>
+
+## Code Examples
+
+<CodeGroup>
+
+```bash Basic Contact
+curl -X POST http://localhost:3000/send/contact \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "contact_name": "John Doe",
+    "contact_phone": "6281234567890"
+  }'
+```
+
+```bash Business Contact
+curl -X POST http://localhost:3000/send/contact \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "contact_name": "Customer Support - Acme Corp",
+    "contact_phone": "6281234567890"
+  }'
+```
+
+```bash Group Contact Share
+curl -X POST http://localhost:3000/send/contact \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "120363025982934543@g.us",
+    "contact_name": "Jane Smith - Project Manager",
+    "contact_phone": "6289876543210"
+  }'
+```
+
+```bash Disappearing Contact
+curl -X POST http://localhost:3000/send/contact \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "contact_name": "Temporary Contact",
+    "contact_phone": "6281234567890",
+    "duration": 86400
+  }'
+```
+
+```bash Forwarded Contact
+curl -X POST http://localhost:3000/send/contact \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "contact_name": "Sarah Johnson",
+    "contact_phone": "6285551234567",
+    "is_forwarded": true
+  }'
+```
+
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": {
+    "message_id": "3EB0B430B6F8F1D0E053AC120E0A9E5C",
+    "status": "Contact sent successfully"
+  }
+}
+```
+
+## Use Cases
+
+### Customer Support
+
+Share support contact information with customers:
+
+```bash
+curl -X POST http://localhost:3000/send/contact \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "contact_name": "Customer Support - 24/7",
+    "contact_phone": "6281234567890"
+  }'
+```
+
+### Sales & Business Development
+
+Introduce team members or sales representatives:
+
+```bash
+curl -X POST http://localhost:3000/send/contact \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "contact_name": "Michael Chen - Sales Manager",
+    "contact_phone": "6289876543210"
+  }'
+```
+
+### Referrals & Networking
+
+Connect people by sharing contact information:
+
+```bash
+curl -X POST http://localhost:3000/send/contact \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "contact_name": "Dr. Emily Roberts - Dentist",
+    "contact_phone": "6285551234567"
+  }'
+```
+
+### Event Coordination
+
+Share event organizer or venue contact:
+
+```bash
+curl -X POST http://localhost:3000/send/contact \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "120363025982934543@g.us",
+    "contact_name": "Event Coordinator - Annual Conference",
+    "contact_phone": "6281234567890"
+  }'
+```
+
+### Emergency Contacts
+
+Distribute emergency or important contact information:
+
+```bash
+curl -X POST http://localhost:3000/send/contact \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "120363025982934543@g.us",
+    "contact_name": "Emergency Hotline",
+    "contact_phone": "112"
+  }'
+```
+
+## Contact Card Display
+
+WhatsApp displays contact cards with:
+
+1. **Contact Name:** Displayed prominently at the top
+2. **Phone Number:** Formatted based on recipient's locale
+3. **WhatsApp Status:** Shows if contact is on WhatsApp
+4. **Action Buttons:**
+   - "Add to Contacts" button
+   - "Message" button (if contact is on WhatsApp)
+   - "Call" button
+
+## Phone Number Formatting
+
+<Warning>
+Proper phone number formatting is critical for contact cards to work correctly.
+</Warning>
+
+### Correct Format
+
+**Recipient Phone (`phone`):**
+```
+{country_code}{number}@s.whatsapp.net
+Example: 6289685024051@s.whatsapp.net
+```
+
+**Contact Phone (`contact_phone`):**
+```
+{country_code}{number}
+Example: 6289685024992
+```
+
+### Country Codes
+
+Always include the country code without the "+" symbol:
+
+- **Indonesia:** 62
+- **United States:** 1
+- **United Kingdom:** 44
+- **India:** 91
+- **Singapore:** 65
+- **Australia:** 61
+
+### Examples
+
+```json
+// ✅ Correct
+{
+  "phone": "6289685024051@s.whatsapp.net",
+  "contact_phone": "6289685024992"
+}
+
+// ❌ Incorrect - Missing country code
+{
+  "phone": "89685024051@s.whatsapp.net",
+  "contact_phone": "89685024992"
+}
+
+// ❌ Incorrect - Extra characters
+{
+  "phone": "+6289685024051@s.whatsapp.net",
+  "contact_phone": "+62 898 6502 4992"
+}
+```
+
+## Best Practices
+
+1. **Descriptive Names**
+   - Include role or department: "John Doe - Sales"
+   - Add company name: "Support - Acme Corp"
+   - Specify purpose: "Emergency Contact"
+
+2. **Verify Phone Numbers**
+   - Double-check country codes
+   - Remove spaces and special characters
+   - Validate number format before sending
+
+3. **Context Matters**
+   - Send contact cards with explanatory text message
+   - Explain who the contact is and why you're sharing
+   - Follow up to ensure recipient saved the contact
+
+4. **Privacy Considerations**
+   - Get permission before sharing someone's contact
+   - Use disappearing messages for sensitive contacts
+   - Be mindful of data protection regulations
+
+5. **Group Sharing**
+   - Explain relationship when sharing in groups
+   - Consider if all group members need the contact
+   - Respect privacy preferences
+
+## Automation Ideas
+
+### Welcome Message with Support Contact
+
+```bash
+# Send welcome message first
+curl -X POST http://localhost:3000/send/message \
+  -d '{"phone": "...", "message": "Welcome! Here's our support contact:"}'
+
+# Then send contact card
+curl -X POST http://localhost:3000/send/contact \
+  -d '{"phone": "...", "contact_name": "Support Team", "contact_phone": "..."}'
+```
+
+### Sales Lead Assignment
+
+```bash
+# Assign sales rep contact to new lead
+curl -X POST http://localhost:3000/send/contact \
+  -d '{
+    "phone": "{{lead_phone}}@s.whatsapp.net",
+    "contact_name": "{{rep_name}} - Your Sales Rep",
+    "contact_phone": "{{rep_phone}}"
+  }'
+```
+
+### Event Registration Confirmation
+
+```bash
+# Send organizer contact after registration
+curl -X POST http://localhost:3000/send/contact \
+  -d '{
+    "phone": "{{attendee_phone}}@s.whatsapp.net",
+    "contact_name": "Event Coordinator",
+    "contact_phone": "{{coordinator_phone}}"
+  }'
+```
+
+## Limitations
+
+<Info>
+WhatsApp contact cards have some inherent limitations.
+</Info>
+
+1. **Single Contact:** Can only send one contact per message
+2. **Basic Info:** Only name and phone number supported
+3. **No Email:** Email addresses not included in contact cards
+4. **No Address:** Physical addresses not supported
+5. **No Organization:** Company/organization field not available
+6. **No Notes:** Cannot add notes or additional context
+
+## Advanced Tips
+
+### Multiple Contacts
+
+To share multiple contacts, send them in separate messages:
+
+```bash
+# Contact 1
+curl -X POST http://localhost:3000/send/contact -d '{...}'
+
+# Contact 2
+curl -X POST http://localhost:3000/send/contact -d '{...}'
+```
+
+### Rich Context
+
+Combine with text messages for context:
+
+```bash
+# 1. Send explanatory message
+curl -X POST http://localhost:3000/send/message \
+  -d '{"phone": "...", "message": "Meet our team:"}'  
+
+# 2. Send contact
+curl -X POST http://localhost:3000/send/contact -d '{...}'
+
+# 3. Send follow-up
+curl -X POST http://localhost:3000/send/message \
+  -d '{"phone": "...", "message": "Feel free to reach out anytime!"}'
+```
+
+## Error Responses
+
+<ResponseField name="400" type="Bad Request">
+  Common causes:
+  - Invalid phone number format
+  - Missing required fields (contact_name or contact_phone)
+  - Invalid contact_phone format (contains special characters)
+  - Missing country code in phone numbers
+</ResponseField>
+
+<ResponseField name="500" type="Internal Server Error">
+  Common causes:
+  - Device not connected
+  - Network connectivity issues
+  - WhatsApp service temporarily unavailable
+</ResponseField>
+
+## Troubleshooting
+
+### Contact Not Appearing Correctly
+1. Verify phone number includes country code
+2. Remove all special characters from contact_phone
+3. Check contact_name is not empty
+4. Ensure proper JSON formatting
+
+### "Add to Contacts" Not Working
+1. Check recipient's device compatibility
+2. Verify contact_phone format is correct
+3. Ensure recipient has permission to add contacts
+4. Try with a different phone number
+
+### Contact Shows as Invalid
+1. Verify country code is correct
+2. Check phone number is active
+3. Remove spaces from contact_phone
+4. Validate number length for country
+
+## Related Endpoints
+
+- [Send Text](/api/send/text) - Send text messages
+- [Send Link](/api/send/link) - Send links with preview
+- [Send Location](/api/send/location) - Share location information
+- [User Info](/api/user/info) - Get user information

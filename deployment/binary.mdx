@@ -1,0 +1,442 @@
+---
+title: 'Binary Deployment'
+description: 'Deploy GOWA WhatsApp API using pre-built binaries'
+icon: 'file-binary'
+---
+
+## Overview
+
+Pre-built binaries provide a lightweight deployment option without Docker. Binaries are built using [GoReleaser](https://goreleaser.com) and available for multiple platforms and architectures.
+
+<Note>
+**Starting from version 7.x**, binaries are built with GoReleaser for better cross-platform support and optimized builds.
+</Note>
+
+## Platform Support
+
+| Platform | Architecture | Binary Name |
+|----------|--------------|-------------|
+| Linux | x86_64 (AMD64) | `whatsapp_Linux_x86_64.tar.gz` |
+| Linux | ARM64 | `whatsapp_Linux_arm64.tar.gz` |
+| macOS | Intel (AMD64) | `whatsapp_Darwin_x86_64.tar.gz` |
+| macOS | Apple Silicon (ARM64) | `whatsapp_Darwin_arm64.tar.gz` |
+| Windows | x86_64 (AMD64) | `whatsapp_Windows_x86_64.zip` |
+
+## System Requirements
+
+### Required Dependencies
+
+<Tabs>
+  <Tab title="Linux">
+    ```bash
+    # Debian/Ubuntu
+    sudo apt update
+    sudo apt install ffmpeg webp
+
+    # Fedora/RHEL
+    sudo dnf install ffmpeg libwebp-tools
+
+    # Arch Linux
+    sudo pacman -S ffmpeg libwebp
+    ```
+  </Tab>
+  <Tab title="macOS">
+    ```bash
+    brew install ffmpeg webp
+    export CGO_CFLAGS_ALLOW="-Xpreprocessor"
+    ```
+
+    <Note>
+    The `CGO_CFLAGS_ALLOW` export is required on macOS to prevent compilation errors.
+    </Note>
+  </Tab>
+  <Tab title="Windows">
+    <Warning>
+    **Windows is not recommended.** Use [WSL (Windows Subsystem for Linux)](https://docs.microsoft.com/en-us/windows/wsl/install) instead.
+    </Warning>
+
+    If you must use native Windows:
+
+    1. **Install FFmpeg:**
+       - Download from [ffmpeg.org](https://www.ffmpeg.org/download.html#build-windows)
+       - Extract and add `bin` folder to PATH
+
+    2. **Install libwebp:**
+       - Download from [Google Developers](https://developers.google.com/speed/webp/download)
+       - Extract and add `bin` folder to PATH
+
+    3. **Add to Environment Variables:**
+       - Search "Environment Variables" in Windows Settings
+       - Edit PATH to include FFmpeg and libwebp `bin` folders
+  </Tab>
+</Tabs>
+
+### Why FFmpeg and libwebp?
+
+- **FFmpeg**: Required for video compression and audio/video processing
+- **libwebp**: Required for sticker support (WebP encoding/decoding and animated stickers)
+
+<Note>
+The libwebp package provides:
+- `cwebp` - WebP encoder
+- `dwebp` - WebP decoder  
+- `webpmux` - Frame extraction for animated stickers
+</Note>
+
+## Download Binary
+
+### Latest Release
+
+Download the latest version from GitHub Releases:
+
+[**GitHub Releases →**](https://github.com/aldinokemal/go-whatsapp-web-multidevice/releases/latest)
+
+### Command-Line Download
+
+<CodeGroup>
+
+```bash Linux (AMD64)
+wget https://github.com/aldinokemal/go-whatsapp-web-multidevice/releases/latest/download/whatsapp_Linux_x86_64.tar.gz
+tar -xzf whatsapp_Linux_x86_64.tar.gz
+chmod +x whatsapp
+```
+
+```bash Linux (ARM64)
+wget https://github.com/aldinokemal/go-whatsapp-web-multidevice/releases/latest/download/whatsapp_Linux_arm64.tar.gz
+tar -xzf whatsapp_Linux_arm64.tar.gz
+chmod +x whatsapp
+```
+
+```bash macOS (Intel)
+curl -L -O https://github.com/aldinokemal/go-whatsapp-web-multidevice/releases/latest/download/whatsapp_Darwin_x86_64.tar.gz
+tar -xzf whatsapp_Darwin_x86_64.tar.gz
+chmod +x whatsapp
+```
+
+```bash macOS (Apple Silicon)
+curl -L -O https://github.com/aldinokemal/go-whatsapp-web-multidevice/releases/latest/download/whatsapp_Darwin_arm64.tar.gz
+tar -xzf whatsapp_Darwin_arm64.tar.gz
+chmod +x whatsapp
+```
+
+</CodeGroup>
+
+## Running the Binary
+
+### REST API Mode
+
+<Tabs>
+  <Tab title="Linux / macOS">
+    ```bash
+    # Basic usage
+    ./whatsapp rest
+
+    # With configuration
+    ./whatsapp rest --port=8080 --debug=true
+    ```
+  </Tab>
+  <Tab title="Windows">
+    ```powershell
+    # Basic usage
+    .\whatsapp.exe rest
+
+    # With configuration
+    .\whatsapp.exe rest --port=8080 --debug=true
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+**Breaking Change (v6+):** You must explicitly specify `rest` mode. Running `./whatsapp` without a mode will show the help menu.
+</Warning>
+
+### MCP Server Mode
+
+```bash
+# Linux / macOS
+./whatsapp mcp --host=localhost --port=8080
+
+# Windows
+.\whatsapp.exe mcp --host=localhost --port=8080
+```
+
+### View Available Options
+
+```bash
+./whatsapp --help
+./whatsapp rest --help
+./whatsapp mcp --help
+```
+
+## Configuration
+
+### Using Command-Line Flags
+
+```bash
+./whatsapp rest \
+  --port=3000 \
+  --debug=true \
+  --os=MyApp \
+  --basic-auth=admin:secret \
+  --autoreply="Thanks for your message" \
+  --webhook=https://webhook.site/your-endpoint \
+  --webhook-secret=my-secret-key
+```
+
+### Using Environment Variables
+
+Create a `.env` file:
+
+```bash
+# Copy example file
+cp .env.example .env
+
+# Edit configuration
+nano .env
+```
+
+Example `.env`:
+
+```bash
+APP_PORT=3000
+APP_DEBUG=false
+APP_OS=MyApp
+APP_BASIC_AUTH=admin:secret
+
+WHATSAPP_AUTO_REPLY="Thanks for contacting us"
+WHATSAPP_WEBHOOK=https://webhook.site/your-endpoint
+WHATSAPP_WEBHOOK_SECRET=your-secret-key
+WHATSAPP_AUTO_REJECT_CALL=true
+```
+
+Then run:
+
+```bash
+./whatsapp rest
+```
+
+### Configuration Priority
+
+1. **Command-line flags** (highest priority)
+2. **Environment variables**
+3. **`.env` file** (lowest priority)
+
+See [Environment Variables](/deployment/environment-variables) for all options.
+
+## Production Deployment
+
+### Systemd Service (Linux)
+
+Create `/etc/systemd/system/whatsapp.service`:
+
+```ini
+[Unit]
+Description=GOWA WhatsApp API Server
+After=network.target
+
+[Service]
+Type=simple
+User=whatsapp
+Group=whatsapp
+WorkingDirectory=/opt/whatsapp
+ExecStart=/opt/whatsapp/whatsapp rest
+Restart=always
+RestartSec=10
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/whatsapp/storages
+
+# Environment
+Environment="APP_PORT=3000"
+Environment="APP_DEBUG=false"
+Environment="WHATSAPP_WEBHOOK=https://api.example.com/webhook"
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Setup:
+
+```bash
+# Create user
+sudo useradd -r -s /bin/false whatsapp
+
+# Create directories
+sudo mkdir -p /opt/whatsapp/storages
+sudo chown -R whatsapp:whatsapp /opt/whatsapp
+
+# Copy binary
+sudo cp whatsapp /opt/whatsapp/
+sudo chmod +x /opt/whatsapp/whatsapp
+
+# Enable and start service
+sudo systemctl daemon-reload
+sudo systemctl enable whatsapp
+sudo systemctl start whatsapp
+
+# Check status
+sudo systemctl status whatsapp
+
+# View logs
+sudo journalctl -u whatsapp -f
+```
+
+### Supervisor (Alternative)
+
+Create `/etc/supervisor/conf.d/whatsapp.conf`:
+
+```ini
+[program:whatsapp]
+command=/opt/whatsapp/whatsapp rest
+directory=/opt/whatsapp
+user=whatsapp
+autostart=true
+autorestart=true
+startretries=3
+stderr_logfile=/var/log/whatsapp/error.log
+stdout_logfile=/var/log/whatsapp/access.log
+environment=APP_PORT="3000",APP_DEBUG="false"
+```
+
+```bash
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl start whatsapp
+```
+
+### PM2 (Node.js Process Manager)
+
+Create `ecosystem.config.js`:
+
+```javascript
+module.exports = {
+  apps: [{
+    name: 'whatsapp',
+    script: './whatsapp',
+    args: 'rest',
+    cwd: '/opt/whatsapp',
+    env: {
+      APP_PORT: 3000,
+      APP_DEBUG: false,
+      WHATSAPP_WEBHOOK: 'https://api.example.com/webhook'
+    },
+    autorestart: true,
+    max_restarts: 10,
+    restart_delay: 5000
+  }]
+}
+```
+
+```bash
+pm2 start ecosystem.config.js
+pm2 save
+pm2 startup
+```
+
+## Building from Source
+
+If you need to build the binary yourself:
+
+```bash
+# Clone repository
+git clone https://github.com/aldinokemal/go-whatsapp-web-multidevice
+cd go-whatsapp-web-multidevice/src
+
+# Build
+go build -o whatsapp
+
+# Run
+./whatsapp rest
+```
+
+### Build for Specific Platform
+
+```bash
+# Linux AMD64
+GOOS=linux GOARCH=amd64 go build -o whatsapp
+
+# Linux ARM64
+GOOS=linux GOARCH=arm64 go build -o whatsapp
+
+# macOS Intel
+GOOS=darwin GOARCH=amd64 go build -o whatsapp
+
+# macOS Apple Silicon
+GOOS=darwin GOARCH=arm64 go build -o whatsapp
+
+# Windows
+GOOS=windows GOARCH=amd64 go build -o whatsapp.exe
+```
+
+## Troubleshooting
+
+### "command not found" Error
+
+Ensure the binary is executable:
+
+```bash
+chmod +x whatsapp
+./whatsapp rest
+```
+
+### FFmpeg Not Found
+
+```bash
+# Verify FFmpeg installation
+ffmpeg -version
+
+# Install if missing
+sudo apt install ffmpeg  # Linux
+brew install ffmpeg       # macOS
+```
+
+### libwebp Not Found
+
+```bash
+# Verify webp tools
+cwebp -version
+webpmux -version
+
+# Install if missing
+sudo apt install webp     # Linux
+brew install webp         # macOS
+```
+
+### macOS: "invalid flag in pkg-config"
+
+Run this before starting the binary:
+
+```bash
+export CGO_CFLAGS_ALLOW="-Xpreprocessor"
+```
+
+Add to `~/.zshrc` or `~/.bashrc` to make permanent:
+
+```bash
+echo 'export CGO_CFLAGS_ALLOW="-Xpreprocessor"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+### Permission Denied on Storage
+
+Ensure the `storages` directory is writable:
+
+```bash
+mkdir -p storages
+chmod 755 storages
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Environment Variables" icon="sliders" href="/deployment/environment-variables">
+    Complete configuration reference
+  </Card>
+  <Card title="Docker Deployment" icon="docker" href="/deployment/docker">
+    Alternative containerized deployment
+  </Card>
+</CardGroup>

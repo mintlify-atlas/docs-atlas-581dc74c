@@ -1,0 +1,172 @@
+---
+title: 'Group Settings'
+---
+
+Manage various group settings such as announce mode, locked status, name, topic, and photo.
+
+## Available Operations
+
+### Set Group Announce Mode
+
+`POST /group/announce`
+
+Enable or disable announce mode so only admins can send messages.
+
+<ParamField body="group_id" type="string" required>
+  The group ID
+  
+  Example: `120363024512399999@g.us`
+</ParamField>
+
+<ParamField body="announce" type="boolean" required>
+  Whether to enable announce mode (`true`) or disable it (`false`)
+</ParamField>
+
+### Set Group Locked Status
+
+`POST /group/locked`
+
+Lock or unlock the group so only admins can modify group info.
+
+<ParamField body="group_id" type="string" required>
+  The group ID
+</ParamField>
+
+<ParamField body="locked" type="boolean" required>
+  Whether to lock the group (`true`) or unlock it (`false`)
+</ParamField>
+
+### Set Group Name
+
+`POST /group/name`
+
+Update the group name (max 25 characters).
+
+<ParamField body="group_id" type="string" required>
+  The group ID
+</ParamField>
+
+<ParamField body="name" type="string" required>
+  The new group name (max 25 characters)
+  
+  Example: `New Group Name`
+</ParamField>
+
+### Set Group Topic
+
+`POST /group/topic`
+
+Set or remove the group topic/description.
+
+<ParamField body="group_id" type="string" required>
+  The group ID
+</ParamField>
+
+<ParamField body="topic" type="string">
+  The group topic/description. Leave empty to remove the topic.
+  
+  Example: `Welcome to our group! Please follow the rules.`
+</ParamField>
+
+### Set Group Photo
+
+`POST /group/photo`
+
+Upload a new group photo or remove the existing one.
+
+<ParamField body="group_id" type="string" required>
+  The group ID
+</ParamField>
+
+<ParamField body="photo" type="file">
+  Group photo to upload (JPEG format recommended). Leave empty to remove photo.
+</ParamField>
+
+## Request Examples
+
+<CodeGroup>
+
+```bash Set Announce Mode
+curl -X POST \
+  'https://your-api-domain.com/group/announce' \
+  -H 'Content-Type: application/json' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password' \
+  -d '{
+    "group_id": "120363024512399999@g.us",
+    "announce": true
+  }'
+```
+
+```bash Set Locked Status
+curl -X POST \
+  'https://your-api-domain.com/group/locked' \
+  -H 'Content-Type: application/json' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password' \
+  -d '{
+    "group_id": "120363024512399999@g.us",
+    "locked": true
+  }'
+```
+
+```bash Set Group Name
+curl -X POST \
+  'https://your-api-domain.com/group/name' \
+  -H 'Content-Type: application/json' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password' \
+  -d '{
+    "group_id": "120363024512399999@g.us",
+    "name": "New Group Name"
+  }'
+```
+
+```bash Set Group Topic
+curl -X POST \
+  'https://your-api-domain.com/group/topic' \
+  -H 'Content-Type: application/json' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password' \
+  -d '{
+    "group_id": "120363024512399999@g.us",
+    "topic": "Welcome to our group! Please follow the rules."
+  }'
+```
+
+```bash Set Group Photo
+curl -X POST \
+  'https://your-api-domain.com/group/photo' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password' \
+  -F 'group_id=120363024512399999@g.us' \
+  -F 'photo=@/path/to/photo.jpg'
+```
+
+</CodeGroup>
+
+## Response
+
+All group settings endpoints return a standard response:
+
+<ResponseField name="code" type="string">
+  Response code (e.g., `SUCCESS`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message describing the result
+</ResponseField>
+
+<ResponseField name="results" type="string">
+  Additional result data (typically null or contains operation details)
+</ResponseField>
+
+<ResponseExample>
+```json Response
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": null
+}
+```
+</ResponseExample>

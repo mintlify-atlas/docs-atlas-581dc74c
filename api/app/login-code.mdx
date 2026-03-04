@@ -1,0 +1,135 @@
+---
+title: 'Login with Pairing Code'
+api: 'GET /app/login-with-code'
+description: 'Login to WhatsApp using a pairing code instead of scanning a QR code'
+---
+
+Initiate the login process by generating a pairing code that can be entered in your WhatsApp mobile app.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Basic authentication credentials (username:password in base64)
+</ParamField>
+
+## Headers
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+## Query Parameters
+
+<ParamField query="phone" type="string" required>
+  Your phone number with country code (no + prefix)
+  
+  **Example:** `628912344551`
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code indicating success or failure
+  
+  **Example:** `SUCCESS`
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message
+  
+  **Example:** `Success`
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  Login response data
+  
+  <ResponseField name="pair_code" type="string">
+    The pairing code to enter in WhatsApp
+    
+    **Example:** `ABCD-1234`
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET 'http://localhost:3000/app/login-with-code?phone=628912344551' \
+  -u 'username:password' \
+  -H 'X-Device-Id: my-device-id'
+```
+
+```javascript JavaScript
+const phone = '628912344551';
+
+const response = await fetch(
+  `http://localhost:3000/app/login-with-code?phone=${phone}`,
+  {
+    method: 'GET',
+    headers: {
+      'Authorization': 'Basic ' + btoa('username:password'),
+      'X-Device-Id': 'my-device-id'
+    }
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+import base64
+
+username = 'username'
+password = 'password'
+credentials = base64.b64encode(f'{username}:{password}'.encode()).decode()
+phone = '628912344551'
+
+response = requests.get(
+    f'http://localhost:3000/app/login-with-code?phone={phone}',
+    headers={
+        'Authorization': f'Basic {credentials}',
+        'X-Device-Id': 'my-device-id'
+    }
+)
+
+print(response.json())
+```
+
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": {
+    "pair_code": "ABCD-1234"
+  }
+}
+```
+
+## Error Responses
+
+<ResponseField name="500" type="object">
+  Internal Server Error
+  
+  ```json
+  {
+    "code": "INTERNAL_SERVER_ERROR",
+    "message": "Failed to generate pairing code",
+    "results": null
+  }
+  ```
+</ResponseField>
+
+## Usage Notes
+
+- Enter the pairing code in WhatsApp: **Settings > Linked Devices > Link a Device > Link with Phone Number Instead**
+- The pairing code is time-limited and expires after a short period
+- Make sure to use your phone number with country code but without the + prefix
+- Once paired successfully, your session will be established
+- The device will remain logged in until you explicitly logout

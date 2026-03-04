@@ -1,0 +1,145 @@
+---
+title: 'Get Contacts'
+api: 'GET /user/my/contacts'
+description: 'Retrieve the list of contacts for the authenticated WhatsApp account'
+---
+
+Get a complete list of all contacts saved in your WhatsApp account.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Basic authentication credentials (username:password in base64)
+</ParamField>
+
+## Headers
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code indicating success or failure
+  
+  **Example:** `SUCCESS`
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message
+  
+  **Example:** `Success get list contacts`
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  Contacts data
+  
+  <ResponseField name="data" type="array">
+    Array of contact objects
+    
+    <ResponseField name="jid" type="string">
+      Contact's WhatsApp JID (identifier)
+      
+      **Example:** `628123123123123@s.whatsapp.net`
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Contact's saved name
+      
+      **Example:** `Aldino Kemal`
+    </ResponseField>
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET 'http://localhost:3000/user/my/contacts' \
+  -u 'username:password' \
+  -H 'X-Device-Id: my-device-id'
+```
+
+```javascript JavaScript
+const response = await fetch('http://localhost:3000/user/my/contacts', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Basic ' + btoa('username:password'),
+    'X-Device-Id': 'my-device-id'
+  }
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+import base64
+
+username = 'username'
+password = 'password'
+credentials = base64.b64encode(f'{username}:{password}'.encode()).decode()
+
+response = requests.get(
+    'http://localhost:3000/user/my/contacts',
+    headers={
+        'Authorization': f'Basic {credentials}',
+        'X-Device-Id': 'my-device-id'
+    }
+)
+
+print(response.json())
+```
+
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Success get list contacts",
+  "results": {
+    "data": [
+      {
+        "jid": "628123123123123@s.whatsapp.net",
+        "name": "Aldino Kemal"
+      },
+      {
+        "jid": "628987654321@s.whatsapp.net",
+        "name": "John Doe"
+      },
+      {
+        "jid": "6281234567890@s.whatsapp.net",
+        "name": "Jane Smith"
+      }
+    ]
+  }
+}
+```
+
+## Error Responses
+
+<ResponseField name="500" type="object">
+  Internal Server Error
+  
+  ```json
+  {
+    "code": "INTERNAL_SERVER_ERROR",
+    "message": "Failed to fetch contacts",
+    "results": null
+  }
+  ```
+</ResponseField>
+
+## Usage Notes
+
+- This endpoint returns all contacts synchronized with your WhatsApp account
+- The `name` field shows the name you've saved for each contact
+- The `jid` is the unique WhatsApp identifier for each contact
+- Contacts are returned in no particular order
+- The list includes only contacts who have WhatsApp accounts
+- To check if a specific number is on WhatsApp, use the `/user/check` endpoint instead

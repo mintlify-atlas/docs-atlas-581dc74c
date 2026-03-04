@@ -1,0 +1,258 @@
+---
+title: "Add Device"
+api: "POST /devices"
+description: "Create a new device slot for multi-device management"
+---
+
+Create a new device slot that can be used to connect a WhatsApp account. You can optionally provide a custom device ID, or let the system generate one automatically.
+
+## Endpoint
+
+```
+POST /devices
+```
+
+## Authentication
+
+This endpoint requires HTTP Basic Authentication.
+
+## Request Body
+
+<ParamField body="device_id" type="string" optional>
+  Optional custom device ID. If not provided, a UUID will be generated automatically.
+  <Expandable title="example">
+    ```
+    my-custom-device-id
+    ```
+  </Expandable>
+</ParamField>
+
+## Request Example
+
+```json
+{
+  "device_id": "my-custom-device-id"
+}
+```
+
+Or for auto-generated device ID:
+
+```json
+{}
+```
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code
+  <Expandable title="example">
+    ```
+    SUCCESS
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message
+  <Expandable title="example">
+    ```
+    Device added
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="status" type="integer">
+  HTTP status code
+  <Expandable title="example">
+    ```
+    200
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  Device information object
+  <Expandable title="properties">
+    <ResponseField name="id" type="string">
+      Device identifier (custom or auto-generated)
+      <Expandable title="example">
+        ```
+        my-custom-device-id
+        ```
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="phone_number" type="string">
+      Phone number (empty until device is logged in)
+      <Expandable title="example">
+        ```
+        
+        ```
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="display_name" type="string">
+      Display name (empty until device is logged in)
+      <Expandable title="example">
+        ```
+        
+        ```
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="state" type="string">
+      Initial connection state (will be "disconnected")
+      <Expandable title="values">
+        - `disconnected` - Device is not connected
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="jid" type="string">
+      WhatsApp JID (empty until device is logged in)
+      <Expandable title="example">
+        ```
+        
+        ```
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="created_at" type="string">
+      Device creation timestamp in ISO 8601 format
+      <Expandable title="example">
+        ```
+        2024-01-01T00:00:00Z
+        ```
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Device added",
+  "status": 200,
+  "results": {
+    "id": "my-custom-device-id",
+    "phone_number": "",
+    "display_name": "",
+    "state": "disconnected",
+    "jid": "",
+    "created_at": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
+## Error Responses
+
+<ResponseField name="400" type="object">
+  Bad Request - Device ID already exists or invalid
+  <Expandable title="response">
+    ```json
+    {
+      "code": "400",
+      "message": "Device ID already exists",
+      "results": null
+    }
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="500" type="object">
+  Internal Server Error
+  <Expandable title="response">
+    ```json
+    {
+      "code": "INTERNAL_SERVER_ERROR",
+      "message": "Error creating device",
+      "results": null
+    }
+    ```
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X POST http://localhost:3000/devices \
+  -u username:password \
+  -H "Content-Type: application/json" \
+  -d '{"device_id": "my-custom-device-id"}'
+```
+
+```bash cURL (Auto-generate ID)
+curl -X POST http://localhost:3000/devices \
+  -u username:password \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+```javascript JavaScript
+const response = await fetch('http://localhost:3000/devices', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Basic ' + btoa('username:password'),
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    device_id: 'my-custom-device-id'
+  })
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+from requests.auth import HTTPBasicAuth
+
+response = requests.post(
+    'http://localhost:3000/devices',
+    auth=HTTPBasicAuth('username', 'password'),
+    json={'device_id': 'my-custom-device-id'}
+)
+
+print(response.json())
+```
+
+```go Go
+package main
+
+import (
+    "bytes"
+    "encoding/json"
+    "fmt"
+    "io"
+    "net/http"
+)
+
+func main() {
+    payload := map[string]string{"device_id": "my-custom-device-id"}
+    jsonData, _ := json.Marshal(payload)
+    
+    client := &http.Client{}
+    req, _ := http.NewRequest("POST", "http://localhost:3000/devices", bytes.NewBuffer(jsonData))
+    req.SetBasicAuth("username", "password")
+    req.Header.Set("Content-Type", "application/json")
+    
+    resp, _ := client.Do(req)
+    defer resp.Body.Close()
+    
+    body, _ := io.ReadAll(resp.Body)
+    fmt.Println(string(body))
+}
+```
+</CodeGroup>
+
+## Next Steps
+
+After adding a device, you need to:
+
+1. Login the device using either:
+   - [QR Code Login](/api/devices/login)
+   - [Pairing Code Login](/api/devices/login)
+2. Use the device ID in subsequent API calls via the `X-Device-Id` header

@@ -1,0 +1,230 @@
+---
+title: "Get Device Info"
+api: "GET /devices/{device_id}"
+description: "Get detailed information about a specific device"
+---
+
+Retrieve detailed information about a specific device, including its connection state, phone number, display name, and other metadata.
+
+## Endpoint
+
+```
+GET /devices/{device_id}
+```
+
+## Authentication
+
+This endpoint requires HTTP Basic Authentication.
+
+## Path Parameters
+
+<ParamField path="device_id" type="string" required>
+  Device ID to retrieve information for
+  <Expandable title="example">
+    ```
+    my-device-id
+    ```
+  </Expandable>
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code
+  <Expandable title="example">
+    ```
+    SUCCESS
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message
+  <Expandable title="example">
+    ```
+    Device info
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="status" type="integer">
+  HTTP status code
+  <Expandable title="example">
+    ```
+    200
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  Device information object
+  <Expandable title="properties">
+    <ResponseField name="id" type="string">
+      Device identifier
+      <Expandable title="example">
+        ```
+        my-device-id
+        ```
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="phone_number" type="string">
+      Phone number associated with the device
+      <Expandable title="example">
+        ```
+        628123456789
+        ```
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="display_name" type="string">
+      Display name of the device user
+      <Expandable title="example">
+        ```
+        John Doe
+        ```
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="state" type="string">
+      Connection state of the device
+      <Expandable title="values">
+        - `disconnected` - Device is not connected
+        - `connected` - Device is connected but not logged in
+        - `logged_in` - Device is connected and logged in
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="jid" type="string">
+      WhatsApp JID (Jabber ID) of the device
+      <Expandable title="example">
+        ```
+        628123456789@s.whatsapp.net
+        ```
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="created_at" type="string">
+      Device creation timestamp in ISO 8601 format
+      <Expandable title="example">
+        ```
+        2024-01-01T00:00:00Z
+        ```
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Device info",
+  "status": 200,
+  "results": {
+    "id": "my-device-id",
+    "phone_number": "628123456789",
+    "display_name": "John Doe",
+    "state": "logged_in",
+    "jid": "628123456789@s.whatsapp.net",
+    "created_at": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
+## Error Responses
+
+<ResponseField name="404" type="object">
+  Device Not Found
+  <Expandable title="response">
+    ```json
+    {
+      "code": "404",
+      "message": "Device not found",
+      "results": null
+    }
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="500" type="object">
+  Internal Server Error
+  <Expandable title="response">
+    ```json
+    {
+      "code": "INTERNAL_SERVER_ERROR",
+      "message": "Error fetching device info",
+      "results": null
+    }
+    ```
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X GET http://localhost:3000/devices/my-device-id \
+  -u username:password
+```
+
+```javascript JavaScript
+const deviceId = 'my-device-id';
+
+const response = await fetch(`http://localhost:3000/devices/${deviceId}`, {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Basic ' + btoa('username:password')
+  }
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+from requests.auth import HTTPBasicAuth
+
+device_id = 'my-device-id'
+
+response = requests.get(
+    f'http://localhost:3000/devices/{device_id}',
+    auth=HTTPBasicAuth('username', 'password')
+)
+
+print(response.json())
+```
+
+```go Go
+package main
+
+import (
+    "fmt"
+    "io"
+    "net/http"
+)
+
+func main() {
+    deviceID := "my-device-id"
+    
+    client := &http.Client{}
+    req, _ := http.NewRequest("GET", "http://localhost:3000/devices/"+deviceID, nil)
+    req.SetBasicAuth("username", "password")
+    
+    resp, _ := client.Do(req)
+    defer resp.Body.Close()
+    
+    body, _ := io.ReadAll(resp.Body)
+    fmt.Println(string(body))
+}
+```
+</CodeGroup>
+
+## Use Cases
+
+- Check device connection status before sending messages
+- Monitor device health and availability
+- Retrieve device metadata for display in UI
+- Verify device exists before performing operations

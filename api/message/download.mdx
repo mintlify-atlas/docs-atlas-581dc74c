@@ -1,0 +1,98 @@
+---
+title: 'Download Message Media'
+openapi: 'GET /message/{message_id}/download'
+---
+
+Download media content (image, video, audio, document) from a message. The media is returned as base64-encoded data.
+
+<Note>
+This endpoint only works for messages that contain media. Text-only messages will return an error.
+</Note>
+
+## Request
+
+<ParamField path="message_id" type="string" required>
+  The unique identifier of the message containing media
+  
+  Example: `3EB0123456789ABCDEF`
+</ParamField>
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+<ParamField query="phone" type="string" required>
+  Phone number with country code and WhatsApp suffix
+  
+  Example: `6289685028129@s.whatsapp.net`
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="integer">
+  HTTP status code (e.g., `200`)
+</ResponseField>
+
+<ResponseField name="code" type="string">
+  Response code (e.g., `SUCCESS`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message describing the result
+  
+  Example: `Media downloaded successfully`
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="status" type="string">
+    Status of the download operation
+  </ResponseField>
+  
+  <ResponseField name="mime_type" type="string">
+    MIME type of the downloaded media
+    
+    Example: `image/jpeg`
+  </ResponseField>
+  
+  <ResponseField name="file_size" type="integer">
+    Size of the file in bytes
+    
+    Example: `524288`
+  </ResponseField>
+  
+  <ResponseField name="file_name" type="string">
+    Original filename of the media
+    
+    Example: `image.jpg`
+  </ResponseField>
+  
+  <ResponseField name="data" type="string">
+    Base64 encoded media data
+  </ResponseField>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X GET \
+  'https://your-api-domain.com/message/3EB0123456789ABCDEF/download?phone=6289685028129@s.whatsapp.net' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": 200,
+  "code": "SUCCESS",
+  "message": "Media downloaded successfully",
+  "results": {
+    "status": "Media downloaded successfully",
+    "mime_type": "image/jpeg",
+    "file_size": 524288,
+    "file_name": "image.jpg",
+    "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+  }
+}
+```
+</ResponseExample>

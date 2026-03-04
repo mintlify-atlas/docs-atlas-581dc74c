@@ -1,0 +1,83 @@
+---
+title: 'Get Group Invite Link'
+openapi: 'GET /group/invite-link'
+---
+
+Retrieve or reset the invitation link for a WhatsApp group. Only group admins can perform this operation.
+
+<Info>
+Resetting the invite link will invalidate the previous link, preventing anyone with the old link from joining the group.
+</Info>
+
+## Request
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+<ParamField query="group_id" type="string" required>
+  The WhatsApp group ID to get the invite link for
+  
+  Example: `120363025982934543@g.us`
+</ParamField>
+
+<ParamField query="reset" type="boolean" default="false">
+  Whether to reset (revoke) the existing invite link and generate a new one
+  
+  Example: `false`
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code (e.g., `SUCCESS`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message describing the result
+  
+  Example: `Success get group invite link`
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="invite_link" type="string">
+    The group invitation link that can be shared
+    
+    Example: `https://chat.whatsapp.com/ABC123...`
+  </ResponseField>
+  
+  <ResponseField name="group_id" type="string">
+    The group ID
+    
+    Example: `120363025982934543@g.us`
+  </ResponseField>
+</ResponseField>
+
+<RequestExample>
+```bash Get Invite Link
+curl -X GET \
+  'https://your-api-domain.com/group/invite-link?group_id=120363025982934543@g.us&reset=false' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password'
+```
+
+```bash Reset Invite Link
+curl -X GET \
+  'https://your-api-domain.com/group/invite-link?group_id=120363025982934543@g.us&reset=true' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "code": "SUCCESS",
+  "message": "Success get group invite link",
+  "results": {
+    "invite_link": "https://chat.whatsapp.com/ABC123DEF456GHI789",
+    "group_id": "120363025982934543@g.us"
+  }
+}
+```
+</ResponseExample>

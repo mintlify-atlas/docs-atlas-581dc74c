@@ -1,0 +1,61 @@
+---
+title: 'Leave Group'
+openapi: 'POST /group/leave'
+---
+
+Leave a WhatsApp group that you are a member of.
+
+<Warning>
+If you are the only admin in the group, you should promote another member to admin before leaving. Otherwise, the group may become unmanaged.
+</Warning>
+
+## Request
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+<ParamField body="group_id" type="string" required>
+  The WhatsApp group ID to leave
+  
+  Example: `120363024512399999@g.us`
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code (e.g., `SUCCESS`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message describing the result
+  
+  Example: `Success`
+</ResponseField>
+
+<ResponseField name="results" type="string">
+  Additional result data (typically null for this endpoint)
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X POST \
+  'https://your-api-domain.com/group/leave' \
+  -H 'Content-Type: application/json' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password' \
+  -d '{
+    "group_id": "120363024512399999@g.us"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": null
+}
+```
+</ResponseExample>

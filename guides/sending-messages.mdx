@@ -1,0 +1,347 @@
+---
+title: 'Sending Messages'
+description: 'Learn how to send text messages with mentions, replies, and forwarding'
+icon: 'paper-plane'
+---
+
+## Overview
+
+GOWA WhatsApp API provides comprehensive message sending capabilities including text messages with mentions, replies to specific messages, and message forwarding.
+
+## Text Messages
+
+### Basic Text Message
+
+Send a simple text message to a WhatsApp number:
+
+```bash
+curl -X POST http://localhost:3000/send/message \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+  -d '{
+    "phone": "6289685028129@s.whatsapp.net",
+    "message": "Hello from GOWA API!"
+  }'
+```
+
+<Note>
+  Phone numbers must be in international format without the `+` prefix. Use `628xxx` instead of `08xxx` for Indonesian numbers.
+</Note>
+
+### Reply to Message
+
+Reply to a specific message using its message ID:
+
+```json
+{
+  "phone": "6289685028129@s.whatsapp.net",
+  "message": "Thanks for your message!",
+  "reply_message_id": "3EB089B9D6ADD58153C561"
+}
+```
+
+The API automatically fetches the original message from storage and includes proper reply context.
+
+### Forward Message
+
+Mark a message as forwarded:
+
+```json
+{
+  "phone": "6289685028129@s.whatsapp.net",
+  "message": "Forwarded content",
+  "is_forwarded": true
+}
+```
+
+<Info>
+  Forwarded messages display the forwarding indicator in WhatsApp client.
+</Info>
+
+## Mentions
+
+GOWA supports two types of mentions:
+
+### Standard Mentions
+
+Mention users by including `@phone` in the message text:
+
+```json
+{
+  "phone": "6289685028129@s.whatsapp.net",
+  "message": "Hello @628974812345, how are you?"
+}
+```
+
+The API automatically parses phone numbers after `@` and creates mention context.
+
+### Ghost Mentions
+
+Mention users **without** showing `@phone` in the message text:
+
+```json
+{
+  "phone": "120363123456789@g.us",
+  "message": "Important announcement for the team",
+  "mentions": ["628974812345", "628974812346"]
+}
+```
+
+<CodeGroup>
+```javascript JavaScript
+const response = await fetch('http://localhost:3000/send/message', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Device-Id': '628123456789@s.whatsapp.net'
+  },
+  body: JSON.stringify({
+    phone: '120363123456789@g.us',
+    message: 'Team update',
+    mentions: ['628974812345', '628974812346']
+  })
+});
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'http://localhost:3000/send/message',
+    headers={
+        'Content-Type': 'application/json',
+        'X-Device-Id': '628123456789@s.whatsapp.net'
+    },
+    json={
+        'phone': '120363123456789@g.us',
+        'message': 'Team update',
+        'mentions': ['628974812345', '628974812346']
+    }
+)
+```
+
+```go Go
+import (
+    "bytes"
+    "encoding/json"
+    "net/http"
+)
+
+payload := map[string]interface{}{
+    "phone": "120363123456789@g.us",
+    "message": "Team update",
+    "mentions": []string{"628974812345", "628974812346"},
+}
+
+data, _ := json.Marshal(payload)
+req, _ := http.NewRequest("POST", "http://localhost:3000/send/message", bytes.NewBuffer(data))
+req.Header.Set("Content-Type", "application/json")
+req.Header.Set("X-Device-Id", "628123456789@s.whatsapp.net")
+
+client := &http.Client{}
+resp, _ := client.Do(req)
+```
+</CodeGroup>
+
+### Mention Everyone (@everyone)
+
+Mention **all participants** in a group using the special `@everyone` keyword:
+
+```json
+{
+  "phone": "120363123456789@g.us",
+  "message": "Emergency meeting at 3 PM!",
+  "mentions": ["@everyone"]
+}
+```
+
+<Warning>
+  The `@everyone` mention only works in groups. The API automatically retrieves all group participants and mentions them.
+</Warning>
+
+## Disappearing Messages
+
+Send messages that auto-delete after a specified duration:
+
+```json
+{
+  "phone": "6289685028129@s.whatsapp.net",
+  "message": "This message will disappear in 24 hours",
+  "duration": 86400
+}
+```
+
+<ParamField path="duration" type="integer">
+  Duration in seconds. Valid values:
+  - `0` — No expiry (disabled)
+  - `86400` — 24 hours
+  - `604800` — 7 days
+  - `7776000` — 90 days
+</ParamField>
+
+## Other Message Types
+
+### Send Contact
+
+Share a contact card:
+
+```json
+{
+  "phone": "6289685028129@s.whatsapp.net",
+  "contact_name": "John Doe",
+  "contact_phone": "6289685024992"
+}
+```
+
+### Send Location
+
+Share geographical coordinates:
+
+```json
+{
+  "phone": "6289685028129@s.whatsapp.net",
+  "latitude": "-7.797068",
+  "longitude": "110.370529"
+}
+```
+
+### Send Link with Preview
+
+Send a URL with rich link preview:
+
+```json
+{
+  "phone": "6289685028129@s.whatsapp.net",
+  "link": "https://example.com",
+  "caption": "Check out this website"
+}
+```
+
+The API automatically fetches Open Graph metadata (title, description, image) from the URL.
+
+### Send Poll
+
+Create a poll with multiple options:
+
+```json
+{
+  "phone": "120363123456789@g.us",
+  "question": "What's your favorite programming language?",
+  "options": ["Python", "JavaScript", "Go", "Rust"],
+  "max_answer": 1
+}
+```
+
+<ParamField path="max_answer" type="integer">
+  Maximum number of answers a participant can select (1 to number of options).
+</ParamField>
+
+## Response Format
+
+Successful message send returns:
+
+```json
+{
+  "status": 200,
+  "code": "SUCCESS",
+  "message": "Message sent to 6289685028129@s.whatsapp.net (server timestamp: 2024-03-04T10:30:00Z)",
+  "results": {
+    "message_id": "3EB0C127D7BACC83D6A1"
+  }
+}
+```
+
+## Common Patterns
+
+### Combining Features
+
+You can combine reply, mentions, and forwarding:
+
+```json
+{
+  "phone": "120363123456789@g.us",
+  "message": "Everyone please read this",
+  "reply_message_id": "3EB089B9D6ADD58153C561",
+  "mentions": ["@everyone"],
+  "is_forwarded": true,
+  "duration": 604800
+}
+```
+
+### Validation Rules
+
+<Steps>
+  <Step title="Phone Number Format">
+    Must be in international format (no leading `0`). Example: `628xxx` not `08xxx`.
+  </Step>
+  
+  <Step title="Message Length">
+    WhatsApp supports up to 65,536 characters per message.
+  </Step>
+  
+  <Step title="Mention Format">
+    - Text mentions: `@628974812345` (phone number only, no spaces)
+    - Ghost mentions: Array of phone numbers without `@` prefix
+    - Special keyword: `"@everyone"` for group-wide mentions
+  </Step>
+</Steps>
+
+## Error Handling
+
+<AccordionGroup>
+  <Accordion title="Invalid Phone Format">
+    ```json
+    {
+      "status": 400,
+      "code": "VALIDATION_ERROR",
+      "message": "phone number must be in international format (should not start with 0)"
+    }
+    ```
+    
+    **Solution:** Use `62xxx` instead of `08xxx` for Indonesian numbers.
+  </Accordion>
+  
+  <Accordion title="Message Not Found (Reply)">
+    If the `reply_message_id` doesn't exist in storage, the API logs a warning and sends the message without reply context.
+    
+    **Best Practice:** Store message IDs from webhook events for reliable replies.
+  </Accordion>
+  
+  <Accordion title="Invalid Duration">
+    ```json
+    {
+      "status": 400,
+      "code": "VALIDATION_ERROR",
+      "message": "duration must be one of: 0, 86400, 604800, 7776000"
+    }
+    ```
+    
+    **Solution:** Use only WhatsApp's standard disappearing message durations.
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Store Message IDs" icon="database">
+    Save message IDs from webhook events to enable reliable reply functionality.
+  </Card>
+  
+  <Card title="Validate Phone Numbers" icon="phone">
+    Always validate phone numbers are in international format before sending.
+  </Card>
+  
+  <Card title="Handle Mentions Carefully" icon="at">
+    Use `@everyone` sparingly in large groups to avoid notification spam.
+  </Card>
+  
+  <Card title="Test Disappearing Messages" icon="clock">
+    Verify disappearing message behavior in test chats before production use.
+  </Card>
+</CardGroup>
+
+## See Also
+
+- [Receiving Messages](/guides/receiving-messages) — Handle incoming messages via webhooks
+- [Media Handling](/guides/media-handling) — Send images, videos, and files
+- [Group Management](/guides/group-management) — Manage group settings and participants

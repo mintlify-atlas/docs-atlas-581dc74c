@@ -1,0 +1,216 @@
+---
+title: "Logout Device"
+api: "POST /devices/{device_id}/logout"
+description: "Logout a specific device from WhatsApp and remove its session"
+---
+
+Logout a device from WhatsApp and remove its session data. This will disconnect the device from WhatsApp servers and clear all authentication credentials.
+
+## Endpoint
+
+```
+POST /devices/{device_id}/logout
+```
+
+## Authentication
+
+This endpoint requires HTTP Basic Authentication.
+
+## Path Parameters
+
+<ParamField path="device_id" type="string" required>
+  Device ID to logout from WhatsApp
+  <Expandable title="example">
+    ```
+    my-device-id
+    ```
+  </Expandable>
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code
+  <Expandable title="example">
+    ```
+    SUCCESS
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message
+  <Expandable title="example">
+    ```
+    Device logged out successfully
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="results" type="string">
+  Additional result data (typically null)
+  <Expandable title="example">
+    ```
+    null
+    ```
+  </Expandable>
+</ResponseField>
+
+## Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Device logged out successfully",
+  "results": null
+}
+```
+
+## Error Responses
+
+<ResponseField name="404" type="object">
+  Device Not Found
+  <Expandable title="response">
+    ```json
+    {
+      "code": "404",
+      "message": "Device not found",
+      "results": null
+    }
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="500" type="object">
+  Internal Server Error
+  <Expandable title="response">
+    ```json
+    {
+      "code": "INTERNAL_SERVER_ERROR",
+      "message": "Error logging out device",
+      "results": null
+    }
+    ```
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X POST http://localhost:3000/devices/my-device-id/logout \
+  -u username:password
+```
+
+```javascript JavaScript
+const deviceId = 'my-device-id';
+
+const response = await fetch(`http://localhost:3000/devices/${deviceId}/logout`, {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Basic ' + btoa('username:password')
+  }
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+from requests.auth import HTTPBasicAuth
+
+device_id = 'my-device-id'
+
+response = requests.post(
+    f'http://localhost:3000/devices/{device_id}/logout',
+    auth=HTTPBasicAuth('username', 'password')
+)
+
+print(response.json())
+```
+
+```go Go
+package main
+
+import (
+    "fmt"
+    "io"
+    "net/http"
+)
+
+func main() {
+    deviceID := "my-device-id"
+    
+    client := &http.Client{}
+    req, _ := http.NewRequest("POST", "http://localhost:3000/devices/"+deviceID+"/logout", nil)
+    req.SetBasicAuth("username", "password")
+    
+    resp, _ := client.Do(req)
+    defer resp.Body.Close()
+    
+    body, _ := io.ReadAll(resp.Body)
+    fmt.Println(string(body))
+}
+```
+</CodeGroup>
+
+## What Happens During Logout
+
+When you logout a device, the following actions occur:
+
+1. **Session Termination**: The device is disconnected from WhatsApp servers
+2. **Credential Removal**: All authentication credentials and session data are deleted
+3. **State Update**: Device state changes to `disconnected`
+4. **Data Cleanup**: Local session database is removed
+
+<Warning>
+  **This is a destructive operation.** After logout:
+  - The device will no longer receive messages
+  - You cannot send messages from this device
+  - You must login again (scan QR code or use pairing code) to use the device
+  - The device will disappear from "Linked Devices" in WhatsApp mobile app
+</Warning>
+
+## Use Cases
+
+- Deactivate a device before removing it from the system
+- Security: logout compromised devices
+- Re-authenticate a device with fresh credentials
+- Clean up devices that are no longer in use
+- Switch WhatsApp accounts on the same device
+
+## Device State After Logout
+
+After successful logout, the device information will show:
+
+```json
+{
+  "id": "my-device-id",
+  "phone_number": "",
+  "display_name": "",
+  "state": "disconnected",
+  "jid": "",
+  "created_at": "2024-01-01T00:00:00Z"
+}
+```
+
+## Re-login After Logout
+
+To use the device again after logout:
+
+1. Call [GET /devices/{device_id}/login](/api/devices/login) to generate a new QR code
+2. Scan the QR code with WhatsApp mobile app
+3. Device will be logged in with fresh credentials
+
+Alternatively, use the [pairing code method](/api/devices/login#pairing-code-login) for authentication.
+
+## Best Practices
+
+<Tip>
+  Always logout a device before removing it from the system using the [DELETE /devices/{device_id}](/api/devices/remove) endpoint. This ensures proper cleanup on both the API server and WhatsApp servers.
+</Tip>
+
+<Info>
+  If you only want to temporarily disconnect a device without logging out, consider using the reconnect functionality instead. Logout is permanent and requires re-authentication.
+</Info>

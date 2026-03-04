@@ -1,0 +1,346 @@
+---
+title: "Login Device"
+api: "GET /devices/{device_id}/login"
+description: "Initiate QR code login for a specific device"
+---
+
+Initiate the QR code login process for a specific device. This endpoint generates a QR code that can be scanned with WhatsApp mobile app to authenticate the device.
+
+## Endpoint
+
+```
+GET /devices/{device_id}/login
+```
+
+For pairing code login (alternative to QR code):
+
+```
+POST /devices/{device_id}/login/code?phone=628912344551
+```
+
+## Authentication
+
+This endpoint requires HTTP Basic Authentication.
+
+## Path Parameters
+
+<ParamField path="device_id" type="string" required>
+  Device ID to initiate login for
+  <Expandable title="example">
+    ```
+    my-device-id
+    ```
+  </Expandable>
+</ParamField>
+
+## QR Code Login
+
+### Response
+
+<ResponseField name="code" type="string">
+  Response code
+  <Expandable title="example">
+    ```
+    SUCCESS
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message
+  <Expandable title="example">
+    ```
+    QR code generated successfully
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  QR code information
+  <Expandable title="properties">
+    <ResponseField name="qr_duration" type="integer">
+      QR code validity duration in seconds
+      <Expandable title="example">
+        ```
+        30
+        ```
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="qr_link" type="string">
+      URL to access the generated QR code image
+      <Expandable title="example">
+        ```
+        http://localhost:3000/statics/images/qrcode/scan-qr-b0b7bb43-9a22-455a-814f-5a225c743310.png
+        ```
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "QR code generated successfully",
+  "results": {
+    "qr_duration": 30,
+    "qr_link": "http://localhost:3000/statics/images/qrcode/scan-qr-b0b7bb43-9a22-455a-814f-5a225c743310.png"
+  }
+}
+```
+
+### Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X GET http://localhost:3000/devices/my-device-id/login \
+  -u username:password
+```
+
+```javascript JavaScript
+const deviceId = 'my-device-id';
+
+const response = await fetch(`http://localhost:3000/devices/${deviceId}/login`, {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Basic ' + btoa('username:password')
+  }
+});
+
+const data = await response.json();
+console.log('QR Code URL:', data.results.qr_link);
+```
+
+```python Python
+import requests
+from requests.auth import HTTPBasicAuth
+
+device_id = 'my-device-id'
+
+response = requests.get(
+    f'http://localhost:3000/devices/{device_id}/login',
+    auth=HTTPBasicAuth('username', 'password')
+)
+
+data = response.json()
+print('QR Code URL:', data['results']['qr_link'])
+```
+
+```go Go
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "io"
+    "net/http"
+)
+
+func main() {
+    deviceID := "my-device-id"
+    
+    client := &http.Client{}
+    req, _ := http.NewRequest("GET", "http://localhost:3000/devices/"+deviceID+"/login", nil)
+    req.SetBasicAuth("username", "password")
+    
+    resp, _ := client.Do(req)
+    defer resp.Body.Close()
+    
+    body, _ := io.ReadAll(resp.Body)
+    
+    var result map[string]interface{}
+    json.Unmarshal(body, &result)
+    fmt.Println("QR Code URL:", result["results"].(map[string]interface{})["qr_link"])
+}
+```
+</CodeGroup>
+
+## Pairing Code Login
+
+Alternative login method using a pairing code instead of QR code scanning.
+
+### Query Parameters
+
+<ParamField query="phone" type="string" required>
+  Phone number to pair with (with country code, without + or spaces)
+  <Expandable title="example">
+    ```
+    628912344551
+    ```
+  </Expandable>
+</ParamField>
+
+### Response
+
+<ResponseField name="code" type="string">
+  Response code
+  <Expandable title="example">
+    ```
+    SUCCESS
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message
+  <Expandable title="example">
+    ```
+    Pairing code generated successfully
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  Pairing code information
+  <Expandable title="properties">
+    <ResponseField name="pair_code" type="string">
+      8-character pairing code to enter in WhatsApp
+      <Expandable title="example">
+        ```
+        ABCD-1234
+        ```
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Pairing code generated successfully",
+  "results": {
+    "pair_code": "ABCD-1234"
+  }
+}
+```
+
+### Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X POST "http://localhost:3000/devices/my-device-id/login/code?phone=628912344551" \
+  -u username:password
+```
+
+```javascript JavaScript
+const deviceId = 'my-device-id';
+const phone = '628912344551';
+
+const response = await fetch(`http://localhost:3000/devices/${deviceId}/login/code?phone=${phone}`, {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Basic ' + btoa('username:password')
+  }
+});
+
+const data = await response.json();
+console.log('Pairing Code:', data.results.pair_code);
+```
+
+```python Python
+import requests
+from requests.auth import HTTPBasicAuth
+
+device_id = 'my-device-id'
+phone = '628912344551'
+
+response = requests.post(
+    f'http://localhost:3000/devices/{device_id}/login/code',
+    params={'phone': phone},
+    auth=HTTPBasicAuth('username', 'password')
+)
+
+data = response.json()
+print('Pairing Code:', data['results']['pair_code'])
+```
+
+```go Go
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "io"
+    "net/http"
+)
+
+func main() {
+    deviceID := "my-device-id"
+    phone := "628912344551"
+    
+    client := &http.Client{}
+    req, _ := http.NewRequest("POST", "http://localhost:3000/devices/"+deviceID+"/login/code?phone="+phone, nil)
+    req.SetBasicAuth("username", "password")
+    
+    resp, _ := client.Do(req)
+    defer resp.Body.Close()
+    
+    body, _ := io.ReadAll(resp.Body)
+    
+    var result map[string]interface{}
+    json.Unmarshal(body, &result)
+    fmt.Println("Pairing Code:", result["results"].(map[string]interface{})["pair_code"])
+}
+```
+</CodeGroup>
+
+## Error Responses
+
+<ResponseField name="404" type="object">
+  Device Not Found
+  <Expandable title="response">
+    ```json
+    {
+      "code": "404",
+      "message": "Device not found",
+      "results": null
+    }
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="500" type="object">
+  Internal Server Error
+  <Expandable title="response">
+    ```json
+    {
+      "code": "INTERNAL_SERVER_ERROR",
+      "message": "Error initiating login",
+      "results": null
+    }
+    ```
+  </Expandable>
+</ResponseField>
+
+## Login Process
+
+### QR Code Method
+
+1. Call the login endpoint to generate a QR code
+2. Display the QR code image from the `qr_link` URL
+3. Open WhatsApp on your phone
+4. Go to **Settings** > **Linked Devices** > **Link a Device**
+5. Scan the QR code displayed
+6. Device will be automatically logged in
+
+### Pairing Code Method
+
+1. Call the pairing code endpoint with your phone number
+2. Copy the 8-character pairing code from the response
+3. Open WhatsApp on your phone
+4. Go to **Settings** > **Linked Devices** > **Link a Device**
+5. Select **Link with phone number instead**
+6. Enter the pairing code
+7. Device will be automatically logged in
+
+<Info>
+  QR codes are valid for 30 seconds. If the QR code expires, call the endpoint again to generate a new one.
+</Info>
+
+<Note>
+  After successful login, the device state will change to `logged_in` and you can start using it to send/receive messages.
+</Note>

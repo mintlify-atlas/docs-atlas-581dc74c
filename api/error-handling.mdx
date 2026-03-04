@@ -1,0 +1,615 @@
+---
+title: 'Error Handling'
+description: 'Understand error responses, common status codes, and troubleshooting strategies for the GOWA WhatsApp API'
+---
+
+## Error Response Format
+
+All API errors follow a consistent JSON structure:
+
+```json
+{
+  "status": 400,
+  "code": "BAD_REQUEST",
+  "message": "Detailed error description",
+  "results": null
+}
+```
+
+### Error Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | integer | HTTP status code (400, 401, 404, 500, etc.) |
+| `code` | string | Application-specific error code for programmatic handling |
+| `message` | string | Human-readable error message |
+| `results` | object/null | Additional error context or `null` if not applicable |
+
+## HTTP Status Codes
+
+The API uses standard HTTP status codes to indicate success or failure:
+
+### 2xx Success
+
+- **200 OK** - Request succeeded
+  - Used for most successful GET, POST operations
+  - Response body contains the requested data
+
+### 4xx Client Errors
+
+- **400 Bad Request** - Invalid request parameters or malformed request body
+  - Missing required fields
+  - Invalid field values
+  - Validation errors
+
+- **401 Unauthorized** - Authentication required or invalid credentials
+  - Missing or invalid `Authorization` header
+  - See [Authentication](/api/authentication) guide
+
+- **404 Not Found** - Requested resource doesn't exist
+  - Device ID not found
+  - Message ID not found
+  - Chat not found
+
+### 5xx Server Errors
+
+- **500 Internal Server Error** - Server-side error occurred
+  - Unexpected errors
+  - WhatsApp protocol errors
+  - Database errors
+
+- **503 Service Unavailable** - Service temporarily unavailable
+  - Device manager not initialized
+  - WhatsApp connection issues
+
+## Common Error Codes
+
+### Authentication Errors
+
+#### 401 Unauthorized
+
+```json
+{
+  "status": 401,
+  "code": "401",
+  "message": "Unauthorized access",
+  "results": null
+}
+```
+
+**Causes:**
+- Missing `Authorization` header when Basic Auth is enabled
+- Invalid username/password combination
+- Malformed Authorization header
+
+**Solution:** Include valid credentials in the request:
+
+```bash
+curl -u admin:password http://localhost:3000/app/devices
+```
+
+### Device Errors
+
+#### DEVICE_ID_REQUIRED
+
+```json
+{
+  "status": 400,
+  "code": "DEVICE_ID_REQUIRED",
+  "message": "device_id is required via X-Device-Id header or device_id query",
+  "results": null
+}
+```
+
+**Causes:**
+- Multiple devices registered but no device ID provided
+- Request to device-scoped endpoint without specifying device
+
+**Solution:** Add the `X-Device-Id` header:
+
+```bash
+curl -H "X-Device-Id: my-device" http://localhost:3000/app/status
+```
+
+#### DEVICE_NOT_FOUND
+
+```json
+{
+  "status": 404,
+  "code": "DEVICE_NOT_FOUND",
+  "message": "device not found; create a device first from /api/devices or provide a valid X-Device-Id",
+  "results": {
+    "device_id": "non-existent-device"
+  }
+}
+```
+
+**Causes:**
+- Specified device ID doesn't exist
+- Device was removed
+- Typo in device ID
+
+**Solution:** 
+1. List all devices: `GET /devices`
+2. Create the device: `POST /devices`
+3. Use the correct device ID from step 1
+
+#### DEVICE_MANAGER_UNAVAILABLE
+
+```json
+{
+  "status": 503,
+  "code": "DEVICE_MANAGER_UNAVAILABLE",
+  "message": "Device manager is not initialized",
+  "results": null
+}
+```
+
+**Causes:**
+- Server is still starting up
+- Internal initialization failure
+
+**Solution:** Wait a few seconds and retry the request.
+
+### Validation Errors
+
+#### BAD_REQUEST - Missing Required Field
+
+```json
+{
+  "status": 400,
+  "code": "400",
+  "message": "phone: cannot be blank",
+  "results": null
+}
+```
+
+**Causes:**
+- Required field not provided in request body
+- Empty string for required field
+
+**Solution:** Include all required fields:
+
+```json
+{
+  "phone": "6289685028129@s.whatsapp.net",
+  "message": "Hello World"
+}
+```
+
+#### BAD_REQUEST - Invalid Format
+
+```json
+{
+  "status": 400,
+  "code": "400",
+  "message": "phone: must be in valid JID format",
+  "results": null
+}
+```
+
+**Causes:**
+- Phone number not in JID format
+- Invalid characters in field value
+
+**Solution:** Use proper JID format:
+
+```
+Individual: {country_code}{number}@s.whatsapp.net
+Group: {group_id}@g.us
+```
+
+### Connection Errors
+
+#### INTERNAL_SERVER_ERROR - Not Logged In
+
+```json
+{
+  "status": 500,
+  "code": "INTERNAL_SERVER_ERROR",
+  "message": "you are not logged in",
+  "results": null
+}
+```
+
+**Causes:**
+- Device not connected to WhatsApp
+- Session expired
+- Device logged out
+
+**Solution:** Login the device:
+
+```bash
+# QR Code login
+GET /devices/{device_id}/login
+
+# Or pairing code login
+POST /devices/{device_id}/login/code?phone=628912344551
+```
+
+#### INTERNAL_SERVER_ERROR - Connection Lost
+
+```json
+{
+  "status": 500,
+  "code": "INTERNAL_SERVER_ERROR",
+  "message": "connection lost",
+  "results": null
+}
+```
+
+**Causes:**
+- Network connectivity issues
+- WhatsApp servers unreachable
+- Device was disconnected
+
+**Solution:** Reconnect the device:
+
+```bash
+POST /devices/{device_id}/reconnect
+```
+
+### Resource Not Found Errors
+
+#### NOT_FOUND - Chat Not Found
+
+```json
+{
+  "status": 404,
+  "code": "404",
+  "message": "Chat not found",
+  "results": null
+}
+```
+
+**Causes:**
+- Chat JID doesn't exist
+- No conversation with specified contact
+- Typo in chat JID
+
+**Solution:** Verify the chat exists:
+
+```bash
+GET /chats
+```
+
+#### NOT_FOUND - Message Not Found
+
+```json
+{
+  "status": 404,
+  "code": "404",
+  "message": "Message not found",
+  "results": null
+}
+```
+
+**Causes:**
+- Invalid message ID
+- Message was deleted
+- Message not in local database
+
+**Solution:** Use valid message ID from `/chat/{chat_jid}/messages` response.
+
+## Error Handling Best Practices
+
+### 1. Always Check Status Code
+
+Check the HTTP status code first, then examine the error details:
+
+```javascript
+const response = await fetch('http://localhost:3000/send/message', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Device-Id': 'my-device'
+  },
+  body: JSON.stringify({ phone: '6289685028129@s.whatsapp.net', message: 'Hi' })
+});
+
+const data = await response.json();
+
+if (!response.ok) {
+  // Handle error
+  console.error(`Error ${data.status}: ${data.message}`);
+  
+  switch(data.code) {
+    case 'DEVICE_NOT_FOUND':
+      // Handle device not found
+      break;
+    case 'INTERNAL_SERVER_ERROR':
+      // Handle server error
+      break;
+    default:
+      // Handle other errors
+  }
+}
+```
+
+### 2. Use Error Codes for Logic
+
+Use the `code` field for programmatic error handling:
+
+```python
+import requests
+
+response = requests.post(
+    'http://localhost:3000/send/message',
+    headers={'X-Device-Id': 'my-device'},
+    json={'phone': '6289685028129@s.whatsapp.net', 'message': 'Hi'}
+)
+
+data = response.json()
+
+if response.status_code != 200:
+    error_code = data.get('code')
+    
+    if error_code == 'DEVICE_NOT_FOUND':
+        print("Device needs to be created")
+        # Create device
+    elif error_code == 'INTERNAL_SERVER_ERROR':
+        if 'not logged in' in data.get('message', ''):
+            print("Device needs to login")
+            # Initiate login
+    else:
+        print(f"Unexpected error: {data.get('message')}")
+```
+
+### 3. Implement Retry Logic
+
+For transient errors (5xx), implement exponential backoff:
+
+```javascript
+async function sendWithRetry(url, options, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await fetch(url, options);
+      const data = await response.json();
+      
+      if (response.ok) {
+        return data;
+      }
+      
+      // Don't retry client errors (4xx)
+      if (response.status >= 400 && response.status < 500) {
+        throw new Error(data.message);
+      }
+      
+      // Retry server errors (5xx)
+      if (i < maxRetries - 1) {
+        const delay = Math.pow(2, i) * 1000; // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      
+      throw new Error(data.message);
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+    }
+  }
+}
+```
+
+### 4. Log Errors with Context
+
+Include request context in error logs:
+
+```go
+resp, err := client.Do(req)
+if err != nil {
+    log.Printf("Request failed: %v, URL: %s, Method: %s", err, req.URL, req.Method)
+    return err
+}
+
+if resp.StatusCode != 200 {
+    body, _ := io.ReadAll(resp.Body)
+    var errData map[string]interface{}
+    json.Unmarshal(body, &errData)
+    
+    log.Printf(
+        "API error: Code=%s, Message=%s, Status=%d, URL=%s",
+        errData["code"], errData["message"], resp.StatusCode, req.URL,
+    )
+}
+```
+
+### 5. Handle Rate Limiting
+
+<Warning>
+While the API doesn't enforce explicit rate limits, WhatsApp may throttle or ban accounts sending too many messages. Implement delays between messages:
+
+```javascript
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+for (const recipient of recipients) {
+  await sendMessage(recipient, message);
+  await delay(2000); // 2 second delay between messages
+}
+```
+</Warning>
+
+## Debugging Tips
+
+### Enable Debug Mode
+
+Run the server with debug logging:
+
+```bash
+./whatsapp rest --debug=true
+# or
+APP_DEBUG=true ./whatsapp rest
+```
+
+This outputs detailed logs for troubleshooting:
+
+```
+2024-01-15 10:30:15 [INFO] Request: GET /app/status
+2024-01-15 10:30:15 [DEBUG] Device ID: my-device
+2024-01-15 10:30:15 [DEBUG] Resolving device: my-device
+2024-01-15 10:30:15 [INFO] Response: 200 OK
+```
+
+### Check Device Status
+
+Before making requests, verify device connectivity:
+
+```bash
+curl -H "X-Device-Id: my-device" http://localhost:3000/app/status
+```
+
+Response:
+
+```json
+{
+  "status": 200,
+  "code": "SUCCESS",
+  "message": "Connection status retrieved",
+  "results": {
+    "is_connected": true,
+    "is_logged_in": true,
+    "device_id": "6289685028129@s.whatsapp.net"
+  }
+}
+```
+
+### Validate Request Payload
+
+Use tools like `jq` to validate JSON payloads:
+
+```bash
+echo '{"phone":"6289685028129@s.whatsapp.net","message":"Test"}' | jq .
+```
+
+Or use the OpenAPI spec with validation tools:
+
+```bash
+openapi-generator validate -i docs/openapi.yaml
+```
+
+## Common Troubleshooting Scenarios
+
+### Scenario 1: "you are not logged in"
+
+**Problem:** Getting `INTERNAL_SERVER_ERROR` with message "you are not logged in"
+
+**Solution Steps:**
+1. Check device status: `GET /devices/{device_id}/status`
+2. If not logged in, initiate login: `GET /devices/{device_id}/login`
+3. Scan QR code or use pairing code
+4. Verify login: `GET /devices/{device_id}/status`
+
+### Scenario 2: Device keeps disconnecting
+
+**Problem:** Device status shows disconnected frequently
+
+**Solution Steps:**
+1. Check network connectivity
+2. Verify FFmpeg and libwebp are installed
+3. Check for WhatsApp account restrictions
+4. Review server logs with `--debug=true`
+5. Try reconnecting: `POST /devices/{device_id}/reconnect`
+
+### Scenario 3: "field cannot be blank" errors
+
+**Problem:** Validation errors when sending messages
+
+**Solution Steps:**
+1. Review required fields in [OpenAPI spec](https://github.com/aldinokemal/go-whatsapp-web-multidevice/blob/main/docs/openapi.yaml)
+2. Ensure all required fields are present
+3. Check field formats (especially phone numbers)
+4. Verify Content-Type header: `application/json`
+
+### Scenario 4: 404 errors on endpoints
+
+**Problem:** Endpoints returning 404 Not Found
+
+**Solution Steps:**
+1. Verify the correct base URL and path
+2. Check if using base path: `APP_BASE_PATH=/gowa`
+3. Ensure the endpoint exists in the API version you're using
+4. Verify HTTP method (GET vs POST)
+
+## Error Response Examples
+
+### Example 1: Missing Required Field
+
+Request:
+
+```bash
+curl -X POST http://localhost:3000/send/message \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{"phone":"6289685028129@s.whatsapp.net"}'
+```
+
+Response:
+
+```json
+{
+  "status": 400,
+  "code": "400",
+  "message": "message: cannot be blank",
+  "results": null
+}
+```
+
+### Example 2: Invalid Phone Format
+
+Request:
+
+```bash
+curl -X POST http://localhost:3000/send/message \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{"phone":"628968502812","message":"Hi"}'
+```
+
+Response:
+
+```json
+{
+  "status": 400,
+  "code": "400",
+  "message": "phone: must be in valid JID format (e.g., 6289685028129@s.whatsapp.net)",
+  "results": null
+}
+```
+
+### Example 3: Device Not Logged In
+
+Request:
+
+```bash
+curl -X POST http://localhost:3000/send/message \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{"phone":"6289685028129@s.whatsapp.net","message":"Hi"}'
+```
+
+Response:
+
+```json
+{
+  "status": 500,
+  "code": "INTERNAL_SERVER_ERROR",
+  "message": "you are not logged in",
+  "results": null
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="API Overview" icon="book" href="/api/overview">
+    Review API fundamentals
+  </Card>
+  <Card title="Device Scoping" icon="mobile" href="/api/device-scoping">
+    Understand device management
+  </Card>
+  <Card title="Endpoints" icon="server" href="/api/endpoints">
+    Explore available endpoints
+  </Card>
+  <Card title="OpenAPI Spec" icon="file-code" href="https://github.com/aldinokemal/go-whatsapp-web-multidevice/blob/main/docs/openapi.yaml">
+    View full API specification
+  </Card>
+</CardGroup>

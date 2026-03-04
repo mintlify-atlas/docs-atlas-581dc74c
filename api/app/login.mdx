@@ -1,0 +1,127 @@
+---
+title: 'Login with QR Code'
+api: 'GET /app/login'
+description: 'Generate a QR code to authenticate and login to the WhatsApp server'
+---
+
+Initiate the login process by generating a QR code that can be scanned with your WhatsApp mobile app.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Basic authentication credentials (username:password in base64)
+</ParamField>
+
+## Headers
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code indicating success or failure
+  
+  **Example:** `SUCCESS`
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message
+  
+  **Example:** `Success`
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  Login response data
+  
+  <ResponseField name="qr_duration" type="integer">
+    Duration in seconds that the QR code is valid
+    
+    **Example:** `30`
+  </ResponseField>
+  
+  <ResponseField name="qr_link" type="string">
+    URL to the generated QR code image
+    
+    **Example:** `http://localhost:3000/statics/images/qrcode/scan-qr-b0b7bb43-9a22-455a-814f-5a225c743310.png`
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET 'http://localhost:3000/app/login' \
+  -u 'username:password' \
+  -H 'X-Device-Id: my-device-id'
+```
+
+```javascript JavaScript
+const response = await fetch('http://localhost:3000/app/login', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Basic ' + btoa('username:password'),
+    'X-Device-Id': 'my-device-id'
+  }
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+import base64
+
+username = 'username'
+password = 'password'
+credentials = base64.b64encode(f'{username}:{password}'.encode()).decode()
+
+response = requests.get(
+    'http://localhost:3000/app/login',
+    headers={
+        'Authorization': f'Basic {credentials}',
+        'X-Device-Id': 'my-device-id'
+    }
+)
+
+print(response.json())
+```
+
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": {
+    "qr_duration": 30,
+    "qr_link": "http://localhost:3000/statics/images/qrcode/scan-qr-b0b7bb43-9a22-455a-814f-5a225c743310.png"
+  }
+}
+```
+
+## Error Responses
+
+<ResponseField name="500" type="object">
+  Internal Server Error
+  
+  ```json
+  {
+    "code": "INTERNAL_SERVER_ERROR",
+    "message": "you are not logged in",
+    "results": null
+  }
+  ```
+</ResponseField>
+
+## Usage Notes
+
+- The QR code expires after the duration specified in `qr_duration`
+- Scan the QR code with WhatsApp on your mobile device to authenticate
+- Once scanned successfully, your session will be established
+- The device will remain logged in until you explicitly logout

@@ -1,0 +1,395 @@
+---
+title: 'Send Sticker'
+openapi: 'POST /send/sticker'
+---
+
+Send a sticker message to a WhatsApp number or group. The API automatically converts images to WebP format required by WhatsApp.
+
+<Note>
+Stickers are automatically converted to the WebP format that WhatsApp requires. You can upload images in various formats (JPG, PNG, GIF) and they will be converted automatically.
+</Note>
+
+## Endpoint
+
+```
+POST /send/sticker
+```
+
+## Headers
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered.
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `multipart/form-data` for file uploads.
+</ParamField>
+
+## Request Body (multipart/form-data)
+
+<ParamField body="phone" type="string" required>
+  Phone number with country code and WhatsApp suffix.
+  
+  **Format:** `{country_code}{phone_number}@s.whatsapp.net`
+  
+  **Example:** `6289685028129@s.whatsapp.net`
+</ParamField>
+
+<ParamField body="sticker" type="file">
+  Sticker image file to upload. Supported formats: JPG, JPEG, PNG, WebP, GIF.
+  
+  The image will be automatically:
+  - Converted to WebP format
+  - Resized to WhatsApp sticker dimensions (512x512)
+  - Optimized for sticker usage
+  
+  <Info>
+  Either `sticker` (file upload) or `sticker_url` must be provided, but not both.
+  </Info>
+</ParamField>
+
+<ParamField body="sticker_url" type="string">
+  URL of the sticker image to send. The API will download, convert, and send the image.
+  
+  **Example:** `"https://example.com/sticker.png"`
+  
+  <Info>
+  Either `sticker` (file upload) or `sticker_url` must be provided, but not both.
+  </Info>
+</ParamField>
+
+<ParamField body="duration" type="integer">
+  Disappearing message duration in seconds (optional).
+  
+  **Common values:**
+  - `86400` - 24 hours
+  - `604800` - 7 days
+  - `7776000` - 90 days
+</ParamField>
+
+<ParamField body="is_forwarded" type="boolean" default={false}>
+  Mark the message as forwarded.
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response status code. Returns `"SUCCESS"` on successful send.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message.
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="message_id" type="string">
+    Unique identifier for the sent message.
+    
+    **Example:** `"3EB0B430B6F8F1D0E053AC120E0A9E5C"`
+  </ResponseField>
+  
+  <ResponseField name="status" type="string">
+    Detailed status message.
+  </ResponseField>
+</ResponseField>
+
+## Code Examples
+
+<CodeGroup>
+
+```bash File Upload
+curl -X POST http://localhost:3000/send/sticker \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "sticker=@/path/to/funny-emoji.png"
+```
+
+```bash Sticker URL
+curl -X POST http://localhost:3000/send/sticker \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "sticker_url=https://example.com/stickers/happy.png"
+```
+
+```bash Animated Sticker (GIF)
+curl -X POST http://localhost:3000/send/sticker \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "sticker=@/path/to/animated-wave.gif"
+```
+
+```bash Group Sticker
+curl -X POST http://localhost:3000/send/sticker \
+  -H "X-Device-Id: my-device" \
+  -F "phone=120363025982934543@g.us" \
+  -F "sticker=@/path/to/celebration.png"
+```
+
+```bash Disappearing Sticker
+curl -X POST http://localhost:3000/send/sticker \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "sticker=@/path/to/temp-sticker.png" \
+  -F "duration=3600"
+```
+
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": {
+    "message_id": "3EB0B430B6F8F1D0E053AC120E0A9E5C",
+    "status": "Sticker sent successfully"
+  }
+}
+```
+
+## Sticker Requirements
+
+### Image Format
+
+**Supported Input Formats:**
+- JPEG (.jpg, .jpeg)
+- PNG (.png) - Supports transparency
+- WebP (.webp) - Native WhatsApp format
+- GIF (.gif) - Animated stickers
+
+**Output Format:**
+- All stickers are automatically converted to WebP format
+- Static stickers: WebP (lossy or lossless)
+- Animated stickers: Animated WebP
+
+### Dimensions
+
+<Info>
+WhatsApp stickers must be exactly 512x512 pixels. The API automatically handles resizing.
+</Info>
+
+**Automatic Processing:**
+- Images are resized to 512x512 pixels
+- Aspect ratio is maintained (with padding if needed)
+- Transparent background is preserved for PNG
+- White background added for non-transparent images
+
+### File Size
+
+- **Maximum file size:** 100KB (after conversion)
+- **Recommended:** Under 50KB for optimal performance
+- **Animated stickers:** May be larger due to multiple frames
+
+### Design Guidelines
+
+1. **Transparency:** PNG images with transparent backgrounds work best
+2. **Simple Designs:** Clear, bold designs are more effective
+3. **Centered Subject:** Keep the main subject centered
+4. **High Contrast:** Ensure sticker stands out on any background
+5. **No Text:** Minimize text; stickers should be universally understandable
+
+## Animated Stickers
+
+Create animated stickers from GIF files:
+
+```bash
+curl -X POST http://localhost:3000/send/sticker \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "sticker=@/path/to/animated.gif"
+```
+
+**Animated Sticker Requirements:**
+- **Format:** GIF (will be converted to animated WebP)
+- **Dimensions:** 512x512 pixels
+- **Frame Rate:** Max 30 FPS
+- **Duration:** Max 3 seconds
+- **File Size:** Under 500KB (after conversion)
+
+<Warning>
+Animated stickers require more processing time than static stickers. Complex animations may be simplified during conversion.
+</Warning>
+
+## Use Cases
+
+### Express Emotions
+
+Send stickers to express feelings or reactions:
+
+```bash
+curl -X POST http://localhost:3000/send/sticker \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "sticker=@stickers/emotions/happy.png"
+```
+
+### Brand Communication
+
+Use custom branded stickers for marketing:
+
+```bash
+curl -X POST http://localhost:3000/send/sticker \
+  -H "X-Device-Id: my-device" \
+  -F "phone=120363025982934543@g.us" \
+  -F "sticker_url=https://cdn.brand.com/stickers/logo-celebration.png"
+```
+
+### Automated Responses
+
+Send stickers as automated responses:
+
+```bash
+# Thank you sticker for completed orders
+curl -X POST http://localhost:3000/send/sticker \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "sticker=@responses/thank-you.png"
+```
+
+### Interactive Messaging
+
+Enhance conversations with expressive stickers:
+
+```bash
+curl -X POST http://localhost:3000/send/sticker \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "sticker=@stickers/interactive/thumbs-up.png"
+```
+
+## Automatic Conversion Process
+
+The API handles all necessary conversions:
+
+### Static Stickers
+1. **Input:** JPG/PNG/WebP image
+2. **Resize:** Scale to 512x512 pixels
+3. **Convert:** Transform to WebP format
+4. **Optimize:** Compress to meet size requirements
+5. **Send:** Upload to WhatsApp
+
+### Animated Stickers
+1. **Input:** GIF file
+2. **Extract:** Get all frames
+3. **Resize:** Scale each frame to 512x512
+4. **Convert:** Transform to animated WebP
+5. **Optimize:** Reduce file size if needed
+6. **Send:** Upload to WhatsApp
+
+<Note>
+The conversion process is automatic and transparent. You don't need to manually convert images to WebP format.
+</Note>
+
+## Best Practices
+
+1. **Use Transparent Backgrounds**
+   - PNG with transparency looks best
+   - Integrates seamlessly into any chat theme
+   - More professional appearance
+
+2. **Optimize Before Upload**
+   - Pre-resize images to 512x512 if possible
+   - Reduce color palette for smaller file sizes
+   - Remove unnecessary metadata
+
+3. **Create Sticker Packs**
+   - Organize related stickers
+   - Maintain consistent style across pack
+   - Use descriptive file naming
+
+4. **Test on Different Backgrounds**
+   - Ensure sticker is visible on light and dark themes
+   - Check contrast and readability
+   - Verify transparency works correctly
+
+5. **Animated Sticker Tips**
+   - Keep animations simple and short
+   - Limit to 2-3 seconds maximum
+   - Use fewer frames for smaller file size
+   - Test animation speed on mobile devices
+
+6. **Cultural Sensitivity**
+   - Consider cultural meanings of gestures/symbols
+   - Avoid potentially offensive content
+   - Test with diverse audiences
+
+## Creating Custom Stickers
+
+### Design Tools
+
+**Recommended Software:**
+- **Photoshop:** Professional sticker creation
+- **GIMP:** Free alternative to Photoshop
+- **Figma:** Web-based design tool
+- **Inkscape:** Vector graphics editor
+- **Canva:** Simple online design tool
+
+### Design Checklist
+
+- [ ] Image is 512x512 pixels
+- [ ] Background is transparent (PNG)
+- [ ] Subject is centered
+- [ ] High contrast for visibility
+- [ ] File size under 100KB
+- [ ] No copyrighted content
+- [ ] Tested on light and dark themes
+
+## Troubleshooting
+
+### Sticker Not Sending
+1. Check file format is supported
+2. Verify file size is under 100KB
+3. Ensure image is not corrupted
+4. Try with a simpler image first
+5. Check device connection status
+
+### Conversion Fails
+1. Verify image format is valid
+2. Check image is not corrupted
+3. Ensure image has valid dimensions
+4. Try re-saving the image
+5. Convert to PNG format before upload
+
+### Quality Issues
+1. Use higher resolution source images
+2. Avoid JPEG artifacts (use PNG)
+3. Simplify complex designs
+4. Reduce number of colors
+5. Ensure proper transparency settings
+
+### Animated Sticker Issues
+1. Reduce number of frames
+2. Decrease animation duration
+3. Simplify animation movements
+4. Lower frame rate (15-20 FPS)
+5. Optimize GIF before upload
+
+## Error Responses
+
+<ResponseField name="400" type="Bad Request">
+  Common causes:
+  - Invalid phone number format
+  - Missing both `sticker` and `sticker_url`
+  - Providing both `sticker` and `sticker_url`
+  - Unsupported image format
+  - File size too large
+  - Invalid image dimensions
+</ResponseField>
+
+<ResponseField name="500" type="Internal Server Error">
+  Common causes:
+  - Device not connected
+  - Image conversion failed
+  - Failed to download sticker from URL
+  - Image processing error
+  - WebP conversion library error
+  - Insufficient server resources
+</ResponseField>
+
+## Related Endpoints
+
+- [Send Image](/api/send/image) - Send regular images with captions
+- [Send Text](/api/send/text) - Send text messages
+- [Send Video](/api/send/video) - Send video messages
+- [React to Message](/api/message/react) - Add emoji reactions

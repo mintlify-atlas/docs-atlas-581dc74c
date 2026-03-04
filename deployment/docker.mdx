@@ -1,0 +1,360 @@
+---
+title: 'Docker Deployment'
+description: 'Deploy GOWA WhatsApp API using Docker containers'
+icon: 'docker'
+---
+
+## Overview
+
+GOWA provides official Docker images on both Docker Hub and GitHub Container Registry. Docker deployment is the recommended method for production environments as it includes all dependencies (FFmpeg, libwebp) and simplifies deployment.
+
+## Supported Architectures
+
+- **AMD64** (x86_64)
+- **ARM64** (aarch64, Apple Silicon)
+
+All images are multi-arch and will automatically select the correct architecture for your platform.
+
+## Container Registries
+
+### Docker Hub
+
+```bash
+docker pull aldinokemal2104/go-whatsapp-web-multidevice:latest
+```
+
+**Available at:** [hub.docker.com/r/aldinokemal2104/go-whatsapp-web-multidevice](https://hub.docker.com/r/aldinokemal2104/go-whatsapp-web-multidevice/tags)
+
+### GitHub Container Registry
+
+```bash
+docker pull ghcr.io/aldinokemal/go-whatsapp-web-multidevice:latest
+```
+
+**Available at:** [GitHub Packages](https://github.com/aldinokemal/go-whatsapp-web-multidevice/pkgs/container/go-whatsapp-web-multidevice)
+
+<Note>
+Both registries contain identical images. Use Docker Hub for faster pulls in most regions, or GitHub Container Registry if you're already using GitHub infrastructure.
+</Note>
+
+## Quick Start
+
+<CodeGroup>
+
+```bash Docker Hub
+docker run --detach \
+  --publish=3000:3000 \
+  --name=whatsapp \
+  --restart=always \
+  --volume=$(docker volume create --name=whatsapp):/app/storages \
+  aldinokemal2104/go-whatsapp-web-multidevice rest
+```
+
+```bash GitHub Container Registry
+docker run --detach \
+  --publish=3000:3000 \
+  --name=whatsapp \
+  --restart=always \
+  --volume=$(docker volume create --name=whatsapp):/app/storages \
+  ghcr.io/aldinokemal/go-whatsapp-web-multidevice rest
+```
+
+</CodeGroup>
+
+After starting the container, access the web interface at `http://localhost:3000`.
+
+## Volume Mounting
+
+### Persistent Storage
+
+The container stores session data, databases, and media files in `/app/storages`. **Always mount this directory** to persist data across container restarts.
+
+<CodeGroup>
+
+```bash Named Volume (Recommended)
+# Create named volume
+docker volume create whatsapp
+
+# Run with named volume
+docker run -d \
+  -v whatsapp:/app/storages \
+  -p 3000:3000 \
+  aldinokemal2104/go-whatsapp-web-multidevice rest
+```
+
+```bash Bind Mount
+# Run with host directory
+docker run -d \
+  -v /path/on/host/whatsapp-data:/app/storages \
+  -p 3000:3000 \
+  aldinokemal2104/go-whatsapp-web-multidevice rest
+```
+
+</CodeGroup>
+
+### What's Stored
+
+| Path | Contents |
+|------|----------|
+| `/app/storages/whatsapp.db` | SQLite database (sessions, chats, messages) |
+| `/app/storages/media/` | Downloaded media files |
+
+<Warning>
+Without volume mounting, all session data and media will be **permanently lost** when the container is removed.
+</Warning>
+
+## Port Mapping
+
+The application listens on port `3000` inside the container. Map it to your host:
+
+```bash
+# Map to same port
+docker run -p 3000:3000 ...
+
+# Map to different host port
+docker run -p 8080:3000 ...  # Access via http://localhost:8080
+
+# Bind to specific interface
+docker run -p 127.0.0.1:3000:3000 ...  # Localhost only
+```
+
+## Running Modes
+
+### REST API Mode (Default)
+
+```bash
+docker run -d \
+  -p 3000:3000 \
+  -v whatsapp:/app/storages \
+  aldinokemal2104/go-whatsapp-web-multidevice rest
+```
+
+Provides HTTP REST API and web interface.
+
+### MCP Server Mode
+
+```bash
+docker run -d \
+  -p 8080:8080 \
+  -v whatsapp:/app/storages \
+  aldinokemal2104/go-whatsapp-web-multidevice mcp
+```
+
+Provides Model Context Protocol server for AI agent integration.
+
+<Note>
+**Important:** REST and MCP modes cannot run simultaneously due to whatsmeow library limitations.
+</Note>
+
+## Configuration with CLI Flags
+
+Pass configuration as command arguments after the mode:
+
+```bash
+docker run -d \
+  -p 3000:3000 \
+  -v whatsapp:/app/storages \
+  aldinokemal2104/go-whatsapp-web-multidevice rest \
+    --port=3000 \
+    --debug=true \
+    --os=MyApp \
+    --basic-auth=admin:secret \
+    --autoreply="Thanks for your message" \
+    --webhook=https://webhook.site/your-endpoint
+```
+
+### Common CLI Flags
+
+| Flag | Description | Default |
+|------|-------------|----------|
+| `--port` | Application port | `3000` |
+| `--host` | Bind address | `0.0.0.0` |
+| `--debug` | Enable debug logging | `false` |
+| `--os` | Device name in WhatsApp | `Chrome` |
+| `--basic-auth` | Basic auth credentials | - |
+| `--base-path` | Subpath for reverse proxy | - |
+| `--autoreply` | Auto-reply message | - |
+| `--webhook` | Webhook URL(s) | - |
+
+## Configuration with Environment Variables
+
+Use `-e` flags for environment-based configuration:
+
+```bash
+docker run -d \
+  -p 3000:3000 \
+  -v whatsapp:/app/storages \
+  -e APP_PORT=3000 \
+  -e APP_DEBUG=true \
+  -e APP_OS=MyApp \
+  -e APP_BASIC_AUTH=admin:secret \
+  -e WHATSAPP_AUTO_REPLY="Thanks for your message" \
+  -e WHATSAPP_WEBHOOK=https://webhook.site/your-endpoint \
+  aldinokemal2104/go-whatsapp-web-multidevice rest
+```
+
+See [Environment Variables](/deployment/environment-variables) for the complete list.
+
+## Production Example
+
+```bash
+docker run --detach \
+  --name=whatsapp \
+  --restart=always \
+  --publish=127.0.0.1:3000:3000 \
+  --volume=whatsapp:/app/storages \
+  --env APP_BASIC_AUTH=admin:your-secure-password \
+  --env APP_DEBUG=false \
+  --env APP_OS=MyCompany \
+  --env WHATSAPP_WEBHOOK=https://api.mycompany.com/whatsapp/webhook \
+  --env WHATSAPP_WEBHOOK_SECRET=your-webhook-secret \
+  --env WHATSAPP_AUTO_REJECT_CALL=true \
+  aldinokemal2104/go-whatsapp-web-multidevice rest \
+    --account-validation=false
+```
+
+## Container Management
+
+### View Logs
+
+```bash
+# Follow logs
+docker logs -f whatsapp
+
+# Last 100 lines
+docker logs --tail=100 whatsapp
+```
+
+### Restart Container
+
+```bash
+docker restart whatsapp
+```
+
+### Stop Container
+
+```bash
+docker stop whatsapp
+```
+
+### Remove Container
+
+```bash
+# Stop and remove
+docker rm -f whatsapp
+
+# Remove with volume (destroys all data)
+docker rm -f whatsapp && docker volume rm whatsapp
+```
+
+### Update to Latest Version
+
+```bash
+# Pull latest image
+docker pull aldinokemal2104/go-whatsapp-web-multidevice:latest
+
+# Stop and remove old container
+docker rm -f whatsapp
+
+# Start new container with same configuration
+docker run -d \
+  --name=whatsapp \
+  --restart=always \
+  -p 3000:3000 \
+  -v whatsapp:/app/storages \
+  aldinokemal2104/go-whatsapp-web-multidevice rest
+```
+
+## Reverse Proxy Configuration
+
+### Nginx Example
+
+```nginx
+server {
+    listen 80;
+    server_name whatsapp.yourdomain.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+If using subpath deployment:
+
+```bash
+docker run -d \
+  -e APP_BASE_PATH=/whatsapp \
+  -p 3000:3000 \
+  aldinokemal2104/go-whatsapp-web-multidevice rest
+```
+
+```nginx
+location /whatsapp {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+}
+```
+
+### Traefik Example
+
+```yaml
+labels:
+  - "traefik.enable=true"
+  - "traefik.http.routers.whatsapp.rule=Host(`whatsapp.yourdomain.com`)"
+  - "traefik.http.routers.whatsapp.entrypoints=websecure"
+  - "traefik.http.routers.whatsapp.tls.certresolver=letsencrypt"
+  - "traefik.http.services.whatsapp.loadbalancer.server.port=3000"
+```
+
+## Troubleshooting
+
+### Container Exits Immediately
+
+Check logs for errors:
+
+```bash
+docker logs whatsapp
+```
+
+Common causes:
+- Missing `rest` or `mcp` mode argument
+- Port already in use
+- Invalid configuration
+
+### Permission Denied on Volume
+
+Ensure the host directory has correct permissions:
+
+```bash
+sudo chown -R 1000:1000 /path/to/whatsapp-data
+```
+
+### Cannot Access WebSocket
+
+Ensure your reverse proxy passes WebSocket upgrade headers:
+
+```nginx
+proxy_set_header Upgrade $http_upgrade;
+proxy_set_header Connection 'upgrade';
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Docker Compose" icon="layer-group" href="/deployment/docker-compose">
+    Multi-container orchestration with docker-compose
+  </Card>
+  <Card title="Environment Variables" icon="sliders" href="/deployment/environment-variables">
+    Complete configuration reference
+  </Card>
+</CardGroup>

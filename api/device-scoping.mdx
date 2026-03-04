@@ -1,0 +1,412 @@
+---
+title: 'Device Scoping'
+description: 'Understand how to manage multiple WhatsApp devices using the X-Device-Id header and device_id parameter'
+---
+
+## Overview
+
+Starting with version 8.0, GOWA supports managing **multiple WhatsApp accounts simultaneously** in a single server instance. Device scoping allows you to direct API operations to specific WhatsApp devices.
+
+## Device Identification
+
+Each WhatsApp connection (device) is identified by a unique **device ID**. This ID can be:
+
+- **Custom**: Provided by you when creating a device (e.g., `"my-primary-device"`, `"support-team"`)
+- **Auto-generated**: A UUID assigned by the server if not specified
+- **JID-based**: The WhatsApp JID (e.g., `"6289685028129@s.whatsapp.net"`) after login
+
+## Specifying the Device
+
+All device-scoped REST endpoints accept the device ID in two ways:
+
+### 1. X-Device-Id Header (Recommended)
+
+Pass the device ID in the `X-Device-Id` header:
+
+```bash
+curl -X GET http://localhost:3000/app/status \
+  -H "X-Device-Id: my-primary-device"
+```
+
+This method is preferred because:
+- Works with all HTTP methods (GET, POST, DELETE)
+- Keeps URLs clean
+- Easier to implement in client libraries
+
+### 2. device_id Query Parameter
+
+Alternatively, use the `device_id` query parameter:
+
+```bash
+curl -X GET "http://localhost:3000/app/status?device_id=my-primary-device"
+```
+
+<Note>
+If both the header and query parameter are provided, the **header takes precedence**.
+</Note>
+
+### URL Encoding for Special Characters
+
+If your device ID contains special characters (like `@`), URL-encode it:
+
+```bash
+# Device ID: 6289685028129@s.whatsapp.net
+# URL-encoded: 6289685028129%40s.whatsapp.net
+
+curl -X GET "http://localhost:3000/app/status?device_id=6289685028129%40s.whatsapp.net"
+```
+
+The header value is automatically decoded by the middleware.
+
+## Default Device Behavior
+
+When **only one device** is registered, it becomes the default device:
+
+```bash
+# No device ID needed - uses the only registered device
+curl -X GET http://localhost:3000/app/status
+```
+
+This makes single-device deployments backward-compatible with version 7.x.
+
+## Multi-Device Scenarios
+
+### When Multiple Devices Are Registered
+
+If **two or more devices** are registered, you **must** specify the device ID:
+
+```bash
+# ❌ Error: device_id is required
+curl -X GET http://localhost:3000/app/status
+
+# ✅ Correct: specify device ID
+curl -X GET http://localhost:3000/app/status \
+  -H "X-Device-Id: primary-device"
+```
+
+Response when device ID is missing:
+
+```json
+{
+  "status": 400,
+  "code": "DEVICE_ID_REQUIRED",
+  "message": "device_id is required via X-Device-Id header or device_id query",
+  "results": null
+}
+```
+
+### When Device Not Found
+
+If the specified device ID doesn't exist:
+
+```bash
+curl -X GET http://localhost:3000/app/status \
+  -H "X-Device-Id: non-existent-device"
+```
+
+Response:
+
+```json
+{
+  "status": 404,
+  "code": "DEVICE_NOT_FOUND",
+  "message": "device not found; create a device first from /api/devices or provide a valid X-Device-Id",
+  "results": {
+    "device_id": "non-existent-device"
+  }
+}
+```
+
+## Device Management Endpoints
+
+The `/devices` endpoints manage device lifecycle. These endpoints are **not device-scoped** (no `X-Device-Id` header needed).
+
+### List All Devices
+
+```bash
+GET /devices
+```
+
+Returns all registered devices with their connection status:
+
+```json
+{
+  "status": 200,
+  "code": "SUCCESS",
+  "message": "Devices retrieved",
+  "results": {
+    "devices": [
+      {
+        "id": "primary-device",
+        "jid": "6289685028129@s.whatsapp.net",
+        "is_connected": true,
+        "is_logged_in": true
+      },
+      {
+        "id": "support-device",
+        "jid": null,
+        "is_connected": false,
+        "is_logged_in": false
+      }
+    ]
+  }
+}
+```
+
+### Create a Device
+
+```bash
+POST /devices
+Content-Type: application/json
+
+{
+  "device_id": "support-device"
+}
+```
+
+The `device_id` field is optional. If omitted, a UUID will be generated:
+
+```json
+{
+  "status": 200,
+  "code": "SUCCESS",
+  "message": "Device created",
+  "results": {
+    "device_id": "support-device",
+    "message": "Device slot created. Use /devices/{device_id}/login to connect."
+  }
+}
+```
+
+### Get Device Info
+
+```bash
+GET /devices/{device_id}
+```
+
+Example:
+
+```bash
+curl -X GET http://localhost:3000/devices/primary-device
+```
+
+Response:
+
+```json
+{
+  "status": 200,
+  "code": "SUCCESS",
+  "message": "Device info retrieved",
+  "results": {
+    "id": "primary-device",
+    "jid": "6289685028129@s.whatsapp.net",
+    "is_connected": true,
+    "is_logged_in": true,
+    "push_name": "John Doe"
+  }
+}
+```
+
+### Login a Device (QR Code)
+
+```bash
+GET /devices/{device_id}/login
+```
+
+Initiates QR code login:
+
+```bash
+curl -X GET http://localhost:3000/devices/primary-device/login
+```
+
+### Login a Device (Pairing Code)
+
+```bash
+POST /devices/{device_id}/login/code?phone=628912344551
+```
+
+Initiates pairing code login for the specified phone number:
+
+```bash
+curl -X POST "http://localhost:3000/devices/primary-device/login/code?phone=628912344551"
+```
+
+### Logout a Device
+
+```bash
+POST /devices/{device_id}/logout
+```
+
+Logs out and removes the session:
+
+```bash
+curl -X POST http://localhost:3000/devices/primary-device/logout
+```
+
+### Remove a Device
+
+```bash
+DELETE /devices/{device_id}
+```
+
+Removes a device from the server (does not logout from WhatsApp):
+
+```bash
+curl -X DELETE http://localhost:3000/devices/support-device
+```
+
+## Legacy Endpoints (v7 Compatibility)
+
+For backward compatibility, v7-style endpoints under `/app` are still available:
+
+- `GET /app/login` - Login with QR (requires `X-Device-Id`)
+- `GET /app/login-with-code` - Login with pairing code
+- `GET /app/logout` - Logout
+- `GET /app/reconnect` - Reconnect
+- `GET /app/status` - Get connection status
+- `GET /app/devices` - List devices
+
+These endpoints require the `X-Device-Id` header when multiple devices are registered.
+
+## WebSocket Device Scoping
+
+For WebSocket connections, specify the device ID as a query parameter:
+
+```javascript
+const ws = new WebSocket('ws://localhost:3000/ws?device_id=primary-device');
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  console.log('Event:', data);
+};
+```
+
+WebSocket events are scoped to the connected device. Each device requires a separate WebSocket connection.
+
+## Webhook Device Identification
+
+All webhook events include a top-level `device_id` field identifying which device received the event:
+
+```json
+{
+  "event": "message",
+  "device_id": "6289685028129@s.whatsapp.net",
+  "payload": {
+    "from": "6281234567890@s.whatsapp.net",
+    "message": "Hello!",
+    "timestamp": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+This allows your webhook handler to route events to the appropriate device/account.
+
+## Middleware Implementation
+
+The device scoping is implemented in `device.go` middleware:
+
+```go
+func DeviceMiddleware(dm *whatsapp.DeviceManager) fiber.Handler {
+    return func(c *fiber.Ctx) error {
+        deviceID := strings.TrimSpace(c.Get(DeviceIDHeader))
+        // URL-decode the header value
+        if decoded, err := url.QueryUnescape(deviceID); err == nil {
+            deviceID = decoded
+        }
+        if deviceID == "" {
+            deviceID = strings.TrimSpace(c.Query("device_id"))
+        }
+        
+        instance, resolvedID, err := dm.ResolveDevice(deviceID)
+        if err != nil {
+            // Return appropriate error response
+        }
+        
+        c.Locals("device_id", resolvedID)
+        c.Locals("device", instance)
+        return c.Next()
+    }
+}
+```
+
+## Best Practices
+
+### Use Descriptive Device IDs
+
+Choose meaningful device IDs that reflect their purpose:
+
+```bash
+# ✅ Good
+primary-device
+support-team
+customer-service-1
+marketing-bot
+
+# ❌ Avoid
+device1
+test
+abc123
+```
+
+### Device ID Naming Conventions
+
+- Use lowercase with hyphens: `my-device-name`
+- Avoid spaces and special characters
+- Keep it concise but descriptive
+- Use environment-based prefixes in multi-environment setups: `prod-primary`, `staging-test`
+
+### Single Device Deployments
+
+If you only need one device, you can omit the device ID entirely:
+
+```bash
+# Create the only device
+curl -X POST http://localhost:3000/devices \
+  -H "Content-Type: application/json" \
+  -d '{"device_id": "main"}'
+
+# Login
+curl -X GET http://localhost:3000/devices/main/login
+
+# All subsequent requests work without X-Device-Id
+curl -X GET http://localhost:3000/app/status
+```
+
+### Multi-Device Use Cases
+
+1. **Department-based routing**: `sales-bot`, `support-bot`, `marketing-bot`
+2. **Environment isolation**: `prod-primary`, `prod-backup`, `staging-test`
+3. **Customer segmentation**: `vip-customers`, `general-customers`
+4. **Regional distribution**: `us-east-device`, `eu-central-device`, `asia-device`
+
+## Troubleshooting
+
+### "DEVICE_MANAGER_UNAVAILABLE" Error
+
+If the device manager is not initialized:
+
+```json
+{
+  "status": 503,
+  "code": "DEVICE_MANAGER_UNAVAILABLE",
+  "message": "Device manager is not initialized",
+  "results": null
+}
+```
+
+**Solution**: Ensure the server is fully started before making requests.
+
+### Device ID Not Working After Login
+
+After logging in with QR/pairing code, the device's internal ID may change to the JID format. Always use the `id` field from `/devices` responses, not the JID.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/api/error-handling">
+    Learn about device-related errors
+  </Card>
+  <Card title="Endpoints" icon="server" href="/api/endpoints">
+    Explore device-scoped endpoints
+  </Card>
+</CardGroup>

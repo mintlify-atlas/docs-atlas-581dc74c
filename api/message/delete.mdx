@@ -1,0 +1,72 @@
+---
+title: 'Delete Message'
+openapi: 'POST /message/{message_id}/delete'
+---
+
+Delete a message from your own chat history. Unlike revoke, this only removes the message from your view and does not affect the recipient's chat.
+
+<Warning>
+This operation only deletes the message from your local chat history. The recipient will still see the message. To remove a message for everyone, use the [Revoke Message](/api/message/revoke) endpoint instead.
+</Warning>
+
+## Request
+
+<ParamField path="message_id" type="string" required>
+  The unique identifier of the message to delete
+</ParamField>
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+<ParamField body="phone" type="string" required>
+  Phone number with country code and WhatsApp suffix
+  
+  Example: `6289685024051@s.whatsapp.net`
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code (e.g., `SUCCESS`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message describing the result
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="message_id" type="string">
+    The ID of the deleted message
+  </ResponseField>
+  
+  <ResponseField name="status" type="string">
+    Status of the delete operation
+  </ResponseField>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X POST \
+  'https://your-api-domain.com/message/3EB0B430B6F8F1D0E053AC120E0A9E5C/delete' \
+  -H 'Content-Type: application/json' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password' \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": {
+    "message_id": "3EB0B430B6F8F1D0E053AC120E0A9E5C",
+    "status": "Message deleted successfully"
+  }
+}
+```
+</ResponseExample>

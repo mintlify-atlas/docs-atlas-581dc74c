@@ -1,0 +1,61 @@
+---
+title: 'Join Group with Link'
+openapi: 'POST /group/join-with-link'
+---
+
+Join a WhatsApp group using an invitation link.
+
+<Warning>
+Make sure you have permission to join the group. Some groups may require admin approval before you can join.
+</Warning>
+
+## Request
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+<ParamField body="link" type="string" required>
+  The WhatsApp group invitation link
+  
+  Example: `https://chat.whatsapp.com/whatsappKeyJoinGroup`
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code (e.g., `SUCCESS`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message describing the result
+  
+  Example: `Success`
+</ResponseField>
+
+<ResponseField name="results" type="string">
+  Additional result data (typically null for this endpoint)
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X POST \
+  'https://your-api-domain.com/group/join-with-link' \
+  -H 'Content-Type: application/json' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password' \
+  -d '{
+    "link": "https://chat.whatsapp.com/whatsappKeyJoinGroup"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": null
+}
+```
+</ResponseExample>

@@ -1,0 +1,409 @@
+---
+title: 'MCP Server'
+description: 'Model Context Protocol server for AI agent integration'
+icon: 'robot'
+---
+
+## Overview
+
+The MCP (Model Context Protocol) server mode allows AI agents and tools to interact with WhatsApp through a standardized protocol using Server-Sent Events (SSE) transport.
+
+<Note>
+  MCP and REST modes cannot run simultaneously due to WhatsApp protocol limitations. Choose one mode based on your use case.
+</Note>
+
+## Getting Started
+
+### Starting the MCP Server
+
+<CodeGroup>
+
+```bash Binary
+./whatsapp mcp
+```
+
+```bash Source
+cd src
+go run . mcp
+```
+
+```bash Docker
+docker run -d \
+  -p 8080:8080 \
+  -v whatsapp:/app/storages \
+  aldinokemal2104/go-whatsapp-web-multidevice:latest \
+  mcp
+```
+
+</CodeGroup>
+
+### Server Configuration
+
+```bash
+# Set custom host and port
+./whatsapp mcp --host localhost --port 8080
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--host` | `localhost` | Host address for the MCP server |
+| `--port` | `8080` | Port for the MCP server |
+
+### Endpoints
+
+Once started, the MCP server exposes two endpoints:
+
+- **SSE endpoint**: `http://localhost:8080/sse`
+- **Message endpoint**: `http://localhost:8080/message`
+
+## MCP Configuration
+
+For AI tools that support MCP with SSE (like Cursor), add this configuration:
+
+```json
+{
+  "mcpServers": {
+    "whatsapp": {
+      "url": "http://localhost:8080/sse"
+    }
+  }
+}
+```
+
+### Cursor IDE Setup
+
+1. Open Cursor settings
+2. Navigate to the MCP configuration section
+3. Add the WhatsApp MCP server configuration:
+
+```json
+{
+  "mcpServers": {
+    "whatsapp": {
+      "url": "http://localhost:8080/sse"
+    }
+  }
+}
+```
+
+4. Save and restart Cursor
+5. The WhatsApp tools will now be available in your AI chat
+
+## Available Tools
+
+The WhatsApp MCP server provides comprehensive tools for AI agents to interact with WhatsApp.
+
+### Connection Management
+
+<CardGroup cols={2}>
+  <Card title="whatsapp_connection_status" icon="signal">
+    Check whether the WhatsApp client is connected and logged in
+  </Card>
+  <Card title="whatsapp_login_qr" icon="qrcode">
+    Initiate QR code based login flow with image output
+  </Card>
+  <Card title="whatsapp_login_with_code" icon="code">
+    Generate pairing code for multi-device login using phone number
+  </Card>
+  <Card title="whatsapp_logout" icon="right-from-bracket">
+    Sign out the current WhatsApp session
+  </Card>
+  <Card title="whatsapp_reconnect" icon="rotate">
+    Attempt to reconnect to WhatsApp using stored session
+  </Card>
+</CardGroup>
+
+### Messaging & Communication
+
+<CardGroup cols={2}>
+  <Card title="whatsapp_send_text" icon="message">
+    Send text messages with reply and forwarding support, including ghost mentions
+  </Card>
+  <Card title="whatsapp_send_contact" icon="address-card">
+    Send contact cards with name and phone number
+  </Card>
+  <Card title="whatsapp_send_link" icon="link">
+    Send links with custom captions
+  </Card>
+  <Card title="whatsapp_send_location" icon="location-dot">
+    Send location coordinates (latitude/longitude)
+  </Card>
+  <Card title="whatsapp_send_image" icon="image">
+    Send images with captions, compression, and view-once options
+  </Card>
+  <Card title="whatsapp_send_sticker" icon="face-smile">
+    Send stickers with automatic WebP conversion (supports JPG/PNG/GIF)
+  </Card>
+</CardGroup>
+
+### Chat & Contact Management
+
+<CardGroup cols={2}>
+  <Card title="whatsapp_list_contacts" icon="users">
+    Retrieve all contacts in your WhatsApp account
+  </Card>
+  <Card title="whatsapp_list_chats" icon="comments">
+    Get recent chats with pagination and search filters
+  </Card>
+  <Card title="whatsapp_get_chat_messages" icon="envelope">
+    Fetch messages from specific chats with time/media filtering
+  </Card>
+  <Card title="whatsapp_download_message_media" icon="download">
+    Download images/videos from messages
+  </Card>
+  <Card title="whatsapp_archive_chat" icon="box-archive">
+    Archive or unarchive a chat conversation
+  </Card>
+</CardGroup>
+
+### Group Management
+
+<CardGroup cols={2}>
+  <Card title="whatsapp_group_create" icon="user-group">
+    Create new groups with optional initial participants
+  </Card>
+  <Card title="whatsapp_group_join_via_link" icon="link">
+    Join groups using invite links
+  </Card>
+  <Card title="whatsapp_group_leave" icon="right-from-bracket">
+    Leave groups by group ID
+  </Card>
+  <Card title="whatsapp_group_participants" icon="users">
+    List all participants in a group
+  </Card>
+  <Card title="whatsapp_group_manage_participants" icon="user-gear">
+    Add, remove, promote, or demote group members
+  </Card>
+  <Card title="whatsapp_group_invite_link" icon="link">
+    Get or reset group invite links
+  </Card>
+  <Card title="whatsapp_group_info" icon="circle-info">
+    Get detailed group information
+  </Card>
+  <Card title="whatsapp_group_set_name" icon="pen">
+    Update group display name
+  </Card>
+  <Card title="whatsapp_group_set_topic" icon="comment">
+    Update group description/topic
+  </Card>
+  <Card title="whatsapp_group_set_locked" icon="lock">
+    Toggle admin-only group info editing
+  </Card>
+  <Card title="whatsapp_group_set_announce" icon="bullhorn">
+    Toggle announcement-only mode
+  </Card>
+  <Card title="whatsapp_group_join_requests" icon="user-plus">
+    List pending join requests
+  </Card>
+  <Card title="whatsapp_group_manage_join_requests" icon="check">
+    Approve or reject join requests
+  </Card>
+</CardGroup>
+
+## Tool Examples
+
+### Sending a Text Message
+
+```json
+{
+  "tool": "whatsapp_send_text",
+  "arguments": {
+    "phone": "628123456789",
+    "message": "Hello from MCP!",
+    "is_forwarded": false
+  }
+}
+```
+
+### Sending with Ghost Mentions
+
+Ghost mentions allow you to mention users without showing `@phone` in the message text:
+
+```json
+{
+  "tool": "whatsapp_send_text",
+  "arguments": {
+    "phone": "120363402106XXXXX@g.us",
+    "message": "Important announcement for everyone!",
+    "mentions": ["@everyone"]
+  }
+}
+```
+
+### Sending an Image
+
+```json
+{
+  "tool": "whatsapp_send_image",
+  "arguments": {
+    "phone": "628123456789",
+    "image_url": "https://example.com/image.jpg",
+    "caption": "Check this out!",
+    "compress": true,
+    "view_once": false
+  }
+}
+```
+
+### Listing Chats
+
+```json
+{
+  "tool": "whatsapp_list_chats",
+  "arguments": {
+    "limit": 25,
+    "offset": 0,
+    "search": "customer",
+    "has_media": false
+  }
+}
+```
+
+### Creating a Group
+
+```json
+{
+  "tool": "whatsapp_group_create",
+  "arguments": {
+    "title": "Project Team",
+    "participants": [
+      "628123456789",
+      "628987654321"
+    ]
+  }
+}
+```
+
+### Managing Group Participants
+
+```json
+{
+  "tool": "whatsapp_group_manage_participants",
+  "arguments": {
+    "group_id": "120363402106XXXXX@g.us",
+    "participants": ["628123456789"],
+    "action": "promote"
+  }
+}
+```
+
+Valid actions: `add`, `remove`, `promote`, `demote`
+
+## Device Management
+
+The MCP server automatically uses the first available device. For multi-device scenarios, the server will select the default device.
+
+<Info>
+  Device selection in MCP mode follows the same rules as REST mode. If multiple devices are registered, ensure proper configuration.
+</Info>
+
+## Transport Details
+
+### Server-Sent Events (SSE)
+
+The MCP server uses SSE transport for real-time communication with AI agents:
+
+- **Keep-alive**: Enabled by default
+- **Base URL**: `http://localhost:8080`
+- **SSE Endpoint**: `/sse`
+- **Message Endpoint**: `/message`
+
+### Message Format
+
+All tool responses follow the MCP protocol format with structured data and fallback text:
+
+```json
+{
+  "structured": {
+    "message_id": "3EB0C127D7BACC83D6A1",
+    "status": "sent"
+  },
+  "fallback": "Message sent successfully with ID 3EB0C127D7BACC83D6A1"
+}
+```
+
+## Limitations
+
+<Warning>
+  - MCP and REST modes cannot run simultaneously
+  - Only one MCP connection can be active at a time
+  - Image-based tools (like QR login) return base64-encoded images
+</Warning>
+
+## Use Cases
+
+<CardGroup cols={2}>
+  <Card title="AI Assistants" icon="robot">
+    Enable AI agents to send and receive WhatsApp messages on your behalf
+  </Card>
+  <Card title="Chatbots" icon="comment-dots">
+    Build intelligent chatbots that interact with WhatsApp contacts
+  </Card>
+  <Card title="Automation" icon="gears">
+    Automate WhatsApp workflows through AI-driven interactions
+  </Card>
+  <Card title="Customer Support" icon="headset">
+    Integrate AI-powered customer support via WhatsApp
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+### MCP Server Not Starting
+
+- Check if port 8080 is already in use
+- Verify no other instance is running
+- Check for WhatsApp connection issues
+
+### Tools Not Responding
+
+- Verify the SSE connection is established
+- Check server logs for errors: `--debug=true`
+- Ensure device is connected and logged in
+
+### Debug Mode
+
+Enable debug logging to troubleshoot issues:
+
+```bash
+./whatsapp mcp --debug=true
+```
+
+Or via environment variable:
+
+```bash
+APP_DEBUG=true ./whatsapp mcp
+```
+
+## Example Integration
+
+Here's a complete example of setting up WhatsApp MCP with Cursor:
+
+<Steps>
+  <Step title="Start MCP Server">
+    ```bash
+    ./whatsapp mcp --host localhost --port 8080
+    ```
+  </Step>
+  
+  <Step title="Configure Cursor">
+    Add to your Cursor MCP settings:
+    ```json
+    {
+      "mcpServers": {
+        "whatsapp": {
+          "url": "http://localhost:8080/sse"
+        }
+      }
+    }
+    ```
+  </Step>
+  
+  <Step title="Login to WhatsApp">
+    Ask the AI: "Check WhatsApp connection status and login if needed"
+  </Step>
+  
+  <Step title="Send Messages">
+    Ask the AI: "Send a message to +628123456789 saying 'Hello from MCP!'"
+  </Step>
+</Steps>

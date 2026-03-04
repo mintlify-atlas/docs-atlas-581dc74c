@@ -1,0 +1,522 @@
+---
+title: 'Send Location'
+openapi: 'POST /send/location'
+---
+
+Send a location pin to a WhatsApp number or group. Recipients can view the location on a map and get directions.
+
+<Note>
+Location messages appear as interactive map pins in WhatsApp, allowing recipients to open the location in their preferred maps application.
+</Note>
+
+## Endpoint
+
+```
+POST /send/location
+```
+
+## Headers
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered.
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Request Body
+
+<ParamField body="phone" type="string" required>
+  Phone number with country code and WhatsApp suffix.
+  
+  **Format:** `{country_code}{phone_number}@s.whatsapp.net`
+  
+  **Example:** `6289685024051@s.whatsapp.net`
+</ParamField>
+
+<ParamField body="latitude" type="string" required>
+  Latitude coordinate in decimal degrees.
+  
+  **Range:** -90 to 90
+  
+  **Example:** `"-7.797068"`
+  
+  <Info>
+  Must be provided as a string, not a number.
+  </Info>
+</ParamField>
+
+<ParamField body="longitude" type="string" required>
+  Longitude coordinate in decimal degrees.
+  
+  **Range:** -180 to 180
+  
+  **Example:** `"110.370529"`
+  
+  <Info>
+  Must be provided as a string, not a number.
+  </Info>
+</ParamField>
+
+<ParamField body="is_forwarded" type="boolean" default={false}>
+  Mark the message as forwarded.
+</ParamField>
+
+<ParamField body="duration" type="integer">
+  Disappearing message duration in seconds (optional).
+  
+  **Common values:**
+  - `86400` - 24 hours
+  - `604800` - 7 days
+  - `7776000` - 90 days
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response status code. Returns `"SUCCESS"` on successful send.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message.
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="message_id" type="string">
+    Unique identifier for the sent message.
+    
+    **Example:** `"3EB0B430B6F8F1D0E053AC120E0A9E5C"`
+  </ResponseField>
+  
+  <ResponseField name="status" type="string">
+    Detailed status message.
+  </ResponseField>
+</ResponseField>
+
+## Code Examples
+
+<CodeGroup>
+
+```bash Basic Location
+curl -X POST http://localhost:3000/send/location \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "latitude": "-7.797068",
+    "longitude": "110.370529"
+  }'
+```
+
+```bash Business Location
+curl -X POST http://localhost:3000/send/location \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "latitude": "40.7580",
+    "longitude": "-73.9855"
+  }'
+```
+
+```bash Meeting Point
+curl -X POST http://localhost:3000/send/location \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "120363025982934543@g.us",
+    "latitude": "51.5074",
+    "longitude": "-0.1278"
+  }'
+```
+
+```bash Delivery Location
+curl -X POST http://localhost:3000/send/location \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "latitude": "1.3521",
+    "longitude": "103.8198"
+  }'
+```
+
+```bash Disappearing Location
+curl -X POST http://localhost:3000/send/location \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "latitude": "-7.797068",
+    "longitude": "110.370529",
+    "duration": 3600
+  }'
+```
+
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": {
+    "message_id": "3EB0B430B6F8F1D0E053AC120E0A9E5C",
+    "status": "Location sent successfully"
+  }
+}
+```
+
+## Understanding Coordinates
+
+### Latitude
+
+- **Range:** -90° (South Pole) to +90° (North Pole)
+- **Equator:** 0°
+- **Northern Hemisphere:** Positive values
+- **Southern Hemisphere:** Negative values
+
+**Examples:**
+- New York: `40.7128°`
+- Sydney: `-33.8688°`
+- London: `51.5074°`
+
+### Longitude
+
+- **Range:** -180° (West) to +180° (East)
+- **Prime Meridian:** 0° (Greenwich, UK)
+- **Eastern Hemisphere:** Positive values
+- **Western Hemisphere:** Negative values
+
+**Examples:**
+- New York: `-74.0060°`
+- Tokyo: `139.6917°`
+- London: `-0.1278°`
+
+### Decimal Degrees Format
+
+Coordinates should be in decimal degrees format:
+
+```json
+// ✅ Correct - Decimal degrees
+{
+  "latitude": "-7.797068",
+  "longitude": "110.370529"
+}
+
+// ❌ Incorrect - DMS format
+{
+  "latitude": "7° 47' 49.4\" S",
+  "longitude": "110° 22' 13.9\" E"
+}
+```
+
+## Use Cases
+
+### Business Location Sharing
+
+Share your business or store location with customers:
+
+```bash
+curl -X POST http://localhost:3000/send/location \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "latitude": "40.7580",
+    "longitude": "-73.9855"
+  }'
+```
+
+### Delivery & Logistics
+
+Send delivery locations or pickup points:
+
+```bash
+curl -X POST http://localhost:3000/send/location \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "latitude": "1.3521",
+    "longitude": "103.8198"
+  }'
+```
+
+### Event Venues
+
+Share event locations with attendees:
+
+```bash
+curl -X POST http://localhost:3000/send/location \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "120363025982934543@g.us",
+    "latitude": "51.5074",
+    "longitude": "-0.1278"
+  }'
+```
+
+### Meeting Coordination
+
+Share meeting locations or rendezvous points:
+
+```bash
+curl -X POST http://localhost:3000/send/location \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "latitude": "-6.2088",
+    "longitude": "106.8456"
+  }'
+```
+
+### Tourist Attractions
+
+Share points of interest or tourist spots:
+
+```bash
+curl -X POST http://localhost:3000/send/location \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "latitude": "48.8584",
+    "longitude": "2.2945"
+  }'
+```
+
+## Getting Coordinates
+
+### From Google Maps
+
+1. Open Google Maps
+2. Right-click on the location
+3. Click on the coordinates shown
+4. Coordinates are copied to clipboard
+5. Format: `latitude, longitude`
+
+### From Mobile Device
+
+1. Open Maps app on phone
+2. Long-press on location
+3. Coordinates appear at top
+4. Copy and use in API call
+
+### Programmatically
+
+```javascript
+// Browser Geolocation API
+navigator.geolocation.getCurrentPosition((position) => {
+  const lat = position.coords.latitude.toString();
+  const lng = position.coords.longitude.toString();
+  
+  // Send to WhatsApp API
+  sendLocation(lat, lng);
+});
+```
+
+### From Address (Geocoding)
+
+Use geocoding services to convert addresses to coordinates:
+
+```javascript
+// Example using Google Geocoding API
+const address = "Times Square, New York";
+const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${address}&key=YOUR_API_KEY`;
+
+fetch(geocodeUrl)
+  .then(res => res.json())
+  .then(data => {
+    const location = data.results[0].geometry.location;
+    const lat = location.lat.toString();
+    const lng = location.lng.toString();
+    
+    // Send to WhatsApp API
+    sendLocation(lat, lng);
+  });
+```
+
+## Location Display in WhatsApp
+
+Recipients will see:
+
+1. **Map Preview:** Static map image with pin
+2. **Coordinates:** Latitude and longitude
+3. **Open in Maps:** Button to open in device's map app
+4. **Get Directions:** Option to navigate to location
+5. **Share Location:** Ability to forward location
+
+### Interactive Features
+
+- Tap to view full map
+- Get directions from current location
+- View nearby places
+- Share location with others
+- Save location for later
+
+## Best Practices
+
+1. **Precision**
+   - Use 6-7 decimal places for meter-level precision
+   - Don't over-specify (8+ decimals is excessive)
+   - Example: `"-7.797068"` (6 decimals = ~11cm precision)
+
+2. **Validate Coordinates**
+   ```javascript
+   function validateCoordinates(lat, lng) {
+     const latitude = parseFloat(lat);
+     const longitude = parseFloat(lng);
+     
+     return (
+       latitude >= -90 && latitude <= 90 &&
+       longitude >= -180 && longitude <= 180
+     );
+   }
+   ```
+
+3. **Add Context**
+   - Send a text message before the location
+   - Explain what the location is for
+   - Provide additional details
+
+   ```bash
+   # 1. Send context
+   curl -X POST http://localhost:3000/send/message \
+     -d '{"phone": "...", "message": "Our office location:"}'
+   
+   # 2. Send location
+   curl -X POST http://localhost:3000/send/location \
+     -d '{"phone": "...", "latitude": "...", "longitude": "..."}'
+   ```
+
+4. **String Format**
+   - Always send coordinates as strings
+   - Include quotes in JSON
+   - Maintain decimal precision
+
+5. **Test Locations**
+   - Verify coordinates before sending
+   - Check location on map preview
+   - Ensure pin is in correct location
+
+## Famous Locations Examples
+
+### Landmarks
+
+```bash
+# Eiffel Tower, Paris
+"latitude": "48.8584", "longitude": "2.2945"
+
+# Statue of Liberty, New York
+"latitude": "40.6892", "longitude": "-74.0445"
+
+# Big Ben, London
+"latitude": "51.5007", "longitude": "-0.1246"
+
+# Sydney Opera House
+"latitude": "-33.8568", "longitude": "151.2153"
+
+# Taj Mahal, India
+"latitude": "27.1751", "longitude": "78.0421"
+```
+
+### Major Cities
+
+```bash
+# Tokyo, Japan
+"latitude": "35.6762", "longitude": "139.6503"
+
+# Dubai, UAE  
+"latitude": "25.2048", "longitude": "55.2708"
+
+# Singapore
+"latitude": "1.3521", "longitude": "103.8198"
+
+# Mumbai, India
+"latitude": "19.0760", "longitude": "72.8777"
+
+# São Paulo, Brazil
+"latitude": "-23.5505", "longitude": "-46.6333"
+```
+
+## Limitations
+
+<Warning>
+Be aware of these limitations when sending locations.
+</Warning>
+
+1. **Static Location Only:** Cannot send live location tracking
+2. **No Address:** Only coordinates, no street address included
+3. **No Place Name:** Cannot specify venue or business name
+4. **Map Provider:** WhatsApp chooses the map provider (varies by region)
+5. **Network Required:** Recipient needs internet to view map
+
+## Coordinate Precision Guide
+
+| Decimal Places | Precision | Example Use Case |
+|----------------|-----------|------------------|
+| 0 | ~111 km | Country |
+| 1 | ~11 km | City |
+| 2 | ~1.1 km | Town/Village |
+| 3 | ~110 m | Large Building |
+| 4 | ~11 m | Land Parcel |
+| 5 | ~1.1 m | Tree/Person |
+| 6 | ~11 cm | **Recommended** |
+| 7 | ~1.1 cm | High Precision |
+| 8+ | &lt;1 cm | Excessive |
+
+<Info>
+For most use cases, 6 decimal places provide sufficient precision (~11cm accuracy).
+</Info>
+
+## Error Responses
+
+<ResponseField name="400" type="Bad Request">
+  Common causes:
+  - Invalid phone number format
+  - Missing latitude or longitude
+  - Invalid coordinate format (not a string)
+  - Coordinates out of valid range
+  - Non-numeric coordinate values
+</ResponseField>
+
+<ResponseField name="500" type="Internal Server Error">
+  Common causes:
+  - Device not connected
+  - Network connectivity issues
+  - WhatsApp service temporarily unavailable
+</ResponseField>
+
+## Troubleshooting
+
+### Wrong Location Displayed
+1. Verify latitude and longitude are correct
+2. Check you haven't swapped lat/lng
+3. Ensure proper decimal format
+4. Verify coordinates are in valid range
+5. Test coordinates in Google Maps first
+
+### Coordinates Rejected
+1. Check format is string, not number
+2. Verify no extra spaces or characters
+3. Ensure decimal point (not comma)
+4. Check latitude is between -90 and 90
+5. Check longitude is between -180 and 180
+
+### Map Not Loading
+1. Recipient needs internet connection
+2. Check recipient's map app is installed
+3. Verify WhatsApp has location permissions
+4. Try re-sending the location
+
+## Related Endpoints
+
+- [Send Link](/api/send/link) - Send links with preview
+- [Send Contact](/api/send/contact) - Share contact cards
+- [Send Text](/api/send/text) - Send text messages
+- [User Info](/api/user/info) - Get user information

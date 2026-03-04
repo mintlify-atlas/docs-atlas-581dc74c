@@ -1,0 +1,630 @@
+---
+title: 'Group Management'
+description: 'Create, join, and manage WhatsApp groups including participants and settings'
+icon: 'users'
+---
+
+## Overview
+
+GOWA WhatsApp API provides comprehensive group management capabilities including creating groups, managing participants, configuring settings, and handling join requests.
+
+## Creating Groups
+
+### Create New Group
+
+Create a new WhatsApp group with optional initial participants:
+
+```bash
+curl -X POST http://localhost:3000/group \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+  -d '{
+    "title": "Project Team",
+    "participants": [
+      "6289685024051@s.whatsapp.net",
+      "6289685024052@s.whatsapp.net"
+    ]
+  }'
+```
+
+<ParamField path="title" type="string" required>
+  Group name (max 25 characters).
+</ParamField>
+
+<ParamField path="participants" type="array">
+  Optional array of phone numbers (JIDs) to add as initial members.
+</ParamField>
+
+### Response
+
+```json
+{
+  "status": 200,
+  "code": "SUCCESS",
+  "message": "Group created successfully",
+  "results": {
+    "group_id": "120363402106123456@g.us",
+    "name": "Project Team"
+  }
+}
+```
+
+## Joining Groups
+
+### Join via Invite Link
+
+Join a group using its invite link:
+
+```bash
+curl -X POST http://localhost:3000/group/join-with-link \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+  -d '{
+    "link": "https://chat.whatsapp.com/ABC123DEF456"
+  }'
+```
+
+<Info>
+  The API automatically extracts the group ID from the invite link and sends a join request.
+</Info>
+
+### Get Group Info from Link
+
+Retrieve group information before joining:
+
+```bash
+curl -X GET "http://localhost:3000/group/info-from-link?link=https://chat.whatsapp.com/ABC123DEF456" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net"
+```
+
+**Response:**
+
+```json
+{
+  "status": 200,
+  "results": {
+    "group_id": "120363402106123456@g.us",
+    "name": "Public Community Group",
+    "topic": "Welcome to our community!",
+    "created_at": "2024-01-15T10:30:00Z",
+    "participant_count": 127,
+    "is_locked": false,
+    "is_announce": true,
+    "description": "Group for sharing updates"
+  }
+}
+```
+
+### Leave Group
+
+```bash
+curl -X POST http://localhost:3000/group/leave \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+  -d '{
+    "group_id": "120363402106123456@g.us"
+  }'
+```
+
+## Participant Management
+
+### List Participants
+
+Get all group members with their roles:
+
+```bash
+curl -X GET "http://localhost:3000/group/participants?group_id=120363402106123456@g.us" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net"
+```
+
+**Response:**
+
+```json
+{
+  "status": 200,
+  "results": {
+    "group_id": "120363402106123456@g.us",
+    "name": "Project Team",
+    "participants": [
+      {
+        "jid": "6289685024051@s.whatsapp.net",
+        "phone_number": "6289685024051",
+        "lid": "251556368777322@lid",
+        "display_name": "John Doe",
+        "is_admin": true,
+        "is_super_admin": true
+      },
+      {
+        "jid": "6289685024052@s.whatsapp.net",
+        "phone_number": "6289685024052",
+        "display_name": "Jane Smith",
+        "is_admin": false,
+        "is_super_admin": false
+      }
+    ]
+  }
+}
+```
+
+### Add Participants
+
+Add new members to a group:
+
+```bash
+curl -X POST http://localhost:3000/group/participants \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+  -d '{
+    "group_id": "120363402106123456@g.us",
+    "participants": [
+      "6289685024053@s.whatsapp.net",
+      "6289685024054@s.whatsapp.net"
+    ]
+  }'
+```
+
+<Note>
+  Only group admins can add participants. Some groups may require admin approval for new members.
+</Note>
+
+### Remove Participants
+
+```bash
+curl -X POST http://localhost:3000/group/participants/remove \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+  -d '{
+    "group_id": "120363402106123456@g.us",
+    "participants": ["6289685024053@s.whatsapp.net"]
+  }'
+```
+
+### Promote to Admin
+
+Grant admin privileges to participants:
+
+```bash
+curl -X POST http://localhost:3000/group/participants/promote \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+  -d '{
+    "group_id": "120363402106123456@g.us",
+    "participants": ["6289685024052@s.whatsapp.net"]
+  }'
+```
+
+### Demote from Admin
+
+Remove admin privileges:
+
+```bash
+curl -X POST http://localhost:3000/group/participants/demote \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+  -d '{
+    "group_id": "120363402106123456@g.us",
+    "participants": ["6289685024052@s.whatsapp.net"]
+  }'
+```
+
+<Warning>
+  You must be a group admin to promote/demote participants. Super admins (group creators) cannot be demoted.
+</Warning>
+
+## Group Settings
+
+### Update Group Name
+
+```bash
+curl -X POST http://localhost:3000/group/name \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+  -d '{
+    "group_id": "120363402106123456@g.us",
+    "name": "Updated Team Name"
+  }'
+```
+
+### Update Group Description
+
+```bash
+curl -X POST http://localhost:3000/group/topic \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+  -d '{
+    "group_id": "120363402106123456@g.us",
+    "topic": "Official project team for Q1 2024"
+  }'
+```
+
+### Set Group Photo
+
+```bash
+curl -X POST http://localhost:3000/group/photo \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+  -F "group_id=120363402106123456@g.us" \
+  -F "photo=@/path/to/group-photo.jpg"
+```
+
+## Group Permissions
+
+### Lock Group Settings
+
+Restrict who can edit group info (name, description, photo):
+
+```bash
+curl -X POST http://localhost:3000/group/locked \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+  -d '{
+    "group_id": "120363402106123456@g.us",
+    "locked": true
+  }'
+```
+
+<Tabs>
+  <Tab title="Locked (true)">
+    Only admins can edit group name, description, and photo.
+  </Tab>
+  <Tab title="Unlocked (false)">
+    All participants can edit group info.
+  </Tab>
+</Tabs>
+
+### Announcement Mode
+
+Control who can send messages:
+
+```bash
+curl -X POST http://localhost:3000/group/announce \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+  -d '{
+    "group_id": "120363402106123456@g.us",
+    "announce": true
+  }'
+```
+
+<Tabs>
+  <Tab title="Announcement Mode (true)">
+    Only admins can send messages. Regular members can only read.
+  </Tab>
+  <Tab title="Regular Mode (false)">
+    All participants can send messages.
+  </Tab>
+</Tabs>
+
+## Join Requests
+
+### List Pending Join Requests
+
+View participants waiting for approval:
+
+```bash
+curl -X GET "http://localhost:3000/group/participant-requests?group_id=120363402106123456@g.us" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net"
+```
+
+**Response:**
+
+```json
+{
+  "status": 200,
+  "results": [
+    {
+      "jid": "6289685024055@s.whatsapp.net",
+      "phone_number": "6289685024055",
+      "display_name": "Alice Johnson",
+      "requested_at": "2024-03-04T10:15:00Z"
+    }
+  ]
+}
+```
+
+### Approve Join Request
+
+```bash
+curl -X POST http://localhost:3000/group/participant-requests/approve \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+  -d '{
+    "group_id": "120363402106123456@g.us",
+    "participants": ["6289685024055@s.whatsapp.net"]
+  }'
+```
+
+### Reject Join Request
+
+```bash
+curl -X POST http://localhost:3000/group/participant-requests/reject \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+  -d '{
+    "group_id": "120363402106123456@g.us",
+    "participants": ["6289685024055@s.whatsapp.net"]
+  }'
+```
+
+## Group Invite Links
+
+### Get Invite Link
+
+Retrieve the group's current invite link:
+
+```bash
+curl -X GET "http://localhost:3000/group/invite-link?group_id=120363402106123456@g.us" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net"
+```
+
+**Response:**
+
+```json
+{
+  "status": 200,
+  "results": {
+    "invite_link": "https://chat.whatsapp.com/ABC123DEF456",
+    "group_id": "120363402106123456@g.us"
+  }
+}
+```
+
+### Reset Invite Link
+
+Generate a new invite link (invalidates the old one):
+
+```bash
+curl -X GET "http://localhost:3000/group/invite-link?group_id=120363402106123456@g.us&reset=true" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net"
+```
+
+<Warning>
+  Resetting the invite link will invalidate all previously shared links.
+</Warning>
+
+## Get Group Information
+
+Retrieve detailed group metadata:
+
+```bash
+curl -X GET "http://localhost:3000/group/info?group_id=120363402106123456@g.us" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net"
+```
+
+**Response:**
+
+```json
+{
+  "status": 200,
+  "results": {
+    "data": {
+      "JID": "120363402106123456@g.us",
+      "Name": "Project Team",
+      "Topic": "Official project team",
+      "IsLocked": false,
+      "IsAnnounce": false,
+      "IsEphemeral": false,
+      "IsIncognito": false,
+      "LinkedParentJID": "",
+      "IsDefaultSubGroup": false,
+      "CreatedAt": "2024-01-15T10:30:00Z",
+      "ParticipantVersionID": "1234567890",
+      "Participants": [
+        {
+          "JID": "6289685024051@s.whatsapp.net",
+          "IsAdmin": true,
+          "IsSuperAdmin": true
+        }
+      ]
+    }
+  }
+}
+```
+
+## Export Participants
+
+Export group participants list as CSV:
+
+```bash
+curl -X GET "http://localhost:3000/group/participants/export?group_id=120363402106123456@g.us" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+  -o participants.csv
+```
+
+**CSV Format:**
+
+```csv
+JID,Phone Number,Display Name,Is Admin,Is Super Admin
+6289685024051@s.whatsapp.net,6289685024051,John Doe,true,true
+6289685024052@s.whatsapp.net,6289685024052,Jane Smith,false,false
+```
+
+## Webhook Events
+
+Receive real-time group events via webhooks:
+
+### Group Participant Events
+
+```json
+{
+  "event": "group.participants",
+  "device_id": "628123456789@s.whatsapp.net",
+  "timestamp": "2024-03-04T10:30:00Z",
+  "payload": {
+    "chat_id": "120363402106123456@g.us",
+    "type": "join",
+    "jids": ["6289685024053@s.whatsapp.net"]
+  }
+}
+```
+
+<ParamField path="payload.type" type="string">
+  Event type:
+  - `join` — Members added/joined
+  - `leave` — Members left/removed
+  - `promote` — Members promoted to admin
+  - `demote` — Members demoted from admin
+</ParamField>
+
+### Group Joined Event
+
+```json
+{
+  "event": "group.joined",
+  "device_id": "628123456789@s.whatsapp.net",
+  "timestamp": "2024-03-04T10:30:00Z",
+  "payload": {
+    "group_id": "120363402106123456@g.us",
+    "name": "New Team Group"
+  }
+}
+```
+
+## List Your Groups
+
+Get all groups you're a member of:
+
+```bash
+curl -X GET http://localhost:3000/user/my/groups \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net"
+```
+
+<Warning>
+  **Known Limitation:** This endpoint returns a maximum of 500 groups due to WhatsApp protocol restrictions. This is enforced by WhatsApp servers, not the API.
+</Warning>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Check Permissions" icon="shield">
+    Always verify you have admin rights before attempting admin-only operations (add/remove participants, change settings).
+  </Card>
+  
+  <Card title="Handle Failures Gracefully" icon="triangle-exclamation">
+    Participant operations may fail for individual users (e.g., privacy settings). Check response status for each participant.
+  </Card>
+  
+  <Card title="Rate Limit Additions" icon="clock">
+    Avoid adding too many participants at once. WhatsApp may rate-limit bulk additions to prevent spam.
+  </Card>
+  
+  <Card title="Use Webhooks" icon="webhook">
+    Subscribe to `group.participants` webhook events to track real-time group changes.
+  </Card>
+</CardGroup>
+
+## Error Handling
+
+<AccordionGroup>
+  <Accordion title="Not a Group Admin">
+    ```json
+    {
+      "status": 403,
+      "code": "FORBIDDEN",
+      "message": "You must be a group admin to perform this action"
+    }
+    ```
+    
+    **Solution:** Only admins can modify group settings and manage participants.
+  </Accordion>
+  
+  <Accordion title="Group Not Found">
+    ```json
+    {
+      "status": 404,
+      "code": "NOT_FOUND",
+      "message": "Group not found or you are not a member"
+    }
+    ```
+    
+    **Solution:** Verify the group ID is correct and you're a member of the group.
+  </Accordion>
+  
+  <Accordion title="Invalid Invite Link">
+    ```json
+    {
+      "status": 400,
+      "code": "VALIDATION_ERROR",
+      "message": "Invalid group invite link format"
+    }
+    ```
+    
+    **Solution:** Ensure the link format is `https://chat.whatsapp.com/[CODE]`.
+  </Accordion>
+</AccordionGroup>
+
+## Complete Example
+
+```javascript
+const axios = require('axios');
+
+const BASE_URL = 'http://localhost:3000';
+const DEVICE_ID = '628123456789@s.whatsapp.net';
+
+class GroupManager {
+  constructor() {
+    this.headers = {
+      'Content-Type': 'application/json',
+      'X-Device-Id': DEVICE_ID
+    };
+  }
+
+  async createGroup(name, participants = []) {
+    const response = await axios.post(
+      `${BASE_URL}/group`,
+      { title: name, participants },
+      { headers: this.headers }
+    );
+    return response.data.results.group_id;
+  }
+
+  async addParticipants(groupId, participants) {
+    return axios.post(
+      `${BASE_URL}/group/participants`,
+      { group_id: groupId, participants },
+      { headers: this.headers }
+    );
+  }
+
+  async promoteToAdmin(groupId, participants) {
+    return axios.post(
+      `${BASE_URL}/group/participants/promote`,
+      { group_id: groupId, participants },
+      { headers: this.headers }
+    );
+  }
+
+  async updateSettings(groupId, locked, announce) {
+    await axios.post(
+      `${BASE_URL}/group/locked`,
+      { group_id: groupId, locked },
+      { headers: this.headers }
+    );
+    
+    await axios.post(
+      `${BASE_URL}/group/announce`,
+      { group_id: groupId, announce },
+      { headers: this.headers }
+    );
+  }
+}
+
+// Usage
+const manager = new GroupManager();
+const groupId = await manager.createGroup('Dev Team', [
+  '6289685024051@s.whatsapp.net'
+]);
+
+await manager.addParticipants(groupId, [
+  '6289685024052@s.whatsapp.net',
+  '6289685024053@s.whatsapp.net'
+]);
+
+await manager.promoteToAdmin(groupId, ['6289685024052@s.whatsapp.net']);
+await manager.updateSettings(groupId, true, false);
+```
+
+## See Also
+
+- [Sending Messages](/guides/sending-messages) — Send messages with @everyone mentions
+- [Receiving Messages](/guides/receiving-messages) — Handle group webhook events
+- [Configuration](/guides/configuration) — Environment variables reference

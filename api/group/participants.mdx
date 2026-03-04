@@ -1,0 +1,110 @@
+---
+title: 'Get Group Participants'
+openapi: 'GET /group/participants'
+---
+
+Retrieve a list of all participants in a WhatsApp group, including their roles and display information.
+
+<Info>
+This endpoint returns detailed information about each participant, including their admin status and display names.
+</Info>
+
+## Request
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+<ParamField query="group_id" type="string" required>
+  The group ID to fetch participants for
+  
+  Example: `120363024512399999@g.us`
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code (e.g., `SUCCESS`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message describing the result
+  
+  Example: `Success getting group participants`
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="group_id" type="string">
+    The group identifier
+  </ResponseField>
+  
+  <ResponseField name="name" type="string">
+    The group name
+  </ResponseField>
+  
+  <ResponseField name="participants" type="array">
+    Array of participant objects
+    
+    <Expandable title="Participant Object">
+      <ResponseField name="jid" type="string">
+        Participant's JID
+        
+        Example: `6289987391723@s.whatsapp.net`
+      </ResponseField>
+      
+      <ResponseField name="phone_number" type="string">
+        Participant's phone number with WhatsApp suffix
+      </ResponseField>
+      
+      <ResponseField name="lid" type="string" nullable>
+        Participant's LID (if available)
+        
+        Example: `12345@lid`
+      </ResponseField>
+      
+      <ResponseField name="display_name" type="string" nullable>
+        Participant's display name
+      </ResponseField>
+      
+      <ResponseField name="is_admin" type="boolean">
+        Whether the participant is a group admin
+      </ResponseField>
+      
+      <ResponseField name="is_super_admin" type="boolean">
+        Whether the participant is a super admin (group creator)
+      </ResponseField>
+    </Expandable>
+  </ResponseField>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X GET \
+  'https://your-api-domain.com/group/participants?group_id=120363024512399999@g.us' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "code": "SUCCESS",
+  "message": "Success getting group participants",
+  "results": {
+    "group_id": "120363024512399999@g.us",
+    "name": "My Awesome Group",
+    "participants": [
+      {
+        "jid": "6289987391723@s.whatsapp.net",
+        "phone_number": "6289987391723@s.whatsapp.net",
+        "lid": "12345@lid",
+        "display_name": "Anonymous Member",
+        "is_admin": true,
+        "is_super_admin": false
+      }
+    ]
+  }
+}
+```
+</ResponseExample>

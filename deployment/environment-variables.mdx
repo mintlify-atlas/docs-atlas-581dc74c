@@ -1,0 +1,509 @@
+---
+title: 'Environment Variables'
+description: 'Complete reference for all GOWA WhatsApp API configuration options'
+icon: 'sliders'
+---
+
+## Overview
+
+GOWA WhatsApp API can be configured using environment variables, command-line flags, or a `.env` file. This page documents all available configuration options.
+
+## Configuration Priority
+
+Configuration is applied in the following order (highest to lowest priority):
+
+1. **Command-line flags** (highest priority)
+2. **Environment variables**
+3. **`.env` file** (lowest priority)
+
+<Note>
+Command-line flags will override environment variables, which will override `.env` file values.
+</Note>
+
+## Using Environment Variables
+
+### With `.env` File
+
+1. Copy the example file:
+   ```bash
+   cp src/.env.example src/.env
+   ```
+
+2. Edit configuration:
+   ```bash
+   nano src/.env
+   ```
+
+3. Run the application:
+   ```bash
+   ./whatsapp rest
+   ```
+
+### With Docker
+
+```bash
+docker run -d \
+  -e APP_PORT=3000 \
+  -e APP_DEBUG=true \
+  -e WHATSAPP_WEBHOOK=https://webhook.site/xxx \
+  aldinokemal2104/go-whatsapp-web-multidevice rest
+```
+
+### With Docker Compose
+
+```yaml
+services:
+  whatsapp:
+    image: aldinokemal2104/go-whatsapp-web-multidevice
+    environment:
+      - APP_PORT=3000
+      - APP_DEBUG=true
+      - WHATSAPP_WEBHOOK=https://webhook.site/xxx
+    command:
+      - rest
+```
+
+## Application Settings
+
+### APP_PORT
+
+- **Description:** HTTP server port
+- **Default:** `3000`
+- **Example:** `APP_PORT=8080`
+- **CLI Flag:** `--port=8080`
+
+### APP_HOST
+
+- **Description:** Host address to bind the HTTP server
+- **Default:** `0.0.0.0` (all interfaces)
+- **Example:** `APP_HOST=127.0.0.1`
+- **CLI Flag:** `--host=127.0.0.1`
+
+<Note>
+Set to `127.0.0.1` to only accept local connections, or `0.0.0.0` to accept connections from any network interface.
+</Note>
+
+### APP_DEBUG
+
+- **Description:** Enable debug logging for troubleshooting
+- **Default:** `false`
+- **Values:** `true`, `false`
+- **Example:** `APP_DEBUG=true`
+- **CLI Flag:** `--debug=true`
+
+<Warning>
+Debug mode logs sensitive information. Never enable in production.
+</Warning>
+
+### APP_OS
+
+- **Description:** Device name shown in WhatsApp (appears when you check connected devices on your phone)
+- **Default:** `Chrome`
+- **Example:** `APP_OS=MyCompany`
+- **CLI Flag:** `--os=MyCompany`
+
+### APP_BASIC_AUTH
+
+- **Description:** Basic authentication credentials (comma-separated for multiple users)
+- **Default:** None (no authentication)
+- **Format:** `username:password` or `user1:pass1,user2:pass2`
+- **Example:** `APP_BASIC_AUTH=admin:secret,user:password123`
+- **CLI Flag:** `--basic-auth=admin:secret`
+
+<Warning>
+**Security:** Always use strong passwords and HTTPS in production. Basic auth sends credentials in base64 encoding, not encryption.
+</Warning>
+
+### APP_BASE_PATH
+
+- **Description:** Base path for subpath deployment (useful with reverse proxies)
+- **Default:** None (root path)
+- **Example:** `APP_BASE_PATH=/gowa` (access at `https://example.com/gowa`)
+- **CLI Flag:** `--base-path=/gowa`
+
+### APP_TRUSTED_PROXIES
+
+- **Description:** Trusted proxy IP ranges for reverse proxy setups (comma-separated CIDR notation)
+- **Default:** None
+- **Example:** `APP_TRUSTED_PROXIES=0.0.0.0/0` or `APP_TRUSTED_PROXIES=172.18.0.0/16,10.0.0.0/8`
+- **CLI Flag:** None (environment variable only)
+
+<Note>
+Required when running behind a reverse proxy to correctly handle `X-Forwarded-*` headers.
+</Note>
+
+## Database Settings
+
+### DB_URI
+
+- **Description:** Database connection URI
+- **Default:** `file:storages/whatsapp.db?_foreign_keys=on` (SQLite)
+- **Example (SQLite):** `DB_URI=file:storages/whatsapp.db?_foreign_keys=on`
+- **Example (PostgreSQL):** `DB_URI=postgres://user:pass@localhost:5432/whatsapp?sslmode=disable`
+- **CLI Flag:** None (environment variable only)
+
+<Tabs>
+  <Tab title="SQLite">
+    ```bash
+    DB_URI="file:storages/whatsapp.db?_foreign_keys=on"
+    ```
+    
+    **Pros:** Zero configuration, embedded database  
+    **Cons:** Single-server only, no high availability
+  </Tab>
+  <Tab title="PostgreSQL">
+    ```bash
+    DB_URI="postgres://username:password@localhost:5432/database?sslmode=require"
+    ```
+    
+    **Pros:** Production-ready, scalable, supports clustering  
+    **Cons:** Requires separate database server
+  </Tab>
+</Tabs>
+
+### DB_KEYS_URI
+
+- **Description:** Database URI for encryption keys (advanced use only)
+- **Default:** `file::memory:?cache=shared&_foreign_keys=on`
+- **Example:** `DB_KEYS_URI=file::memory:?cache=shared&_foreign_keys=on`
+- **CLI Flag:** None (environment variable only)
+
+<Note>
+Most users should leave this at the default value. This is used internally by the whatsmeow library for message encryption keys.
+</Note>
+
+## WhatsApp Settings
+
+### WHATSAPP_AUTO_REPLY
+
+- **Description:** Automatic reply message sent to all incoming messages
+- **Default:** None (no auto-reply)
+- **Example:** `WHATSAPP_AUTO_REPLY="Thanks for your message. We'll respond soon."`
+- **CLI Flag:** `--autoreply="Your message"`
+
+### WHATSAPP_AUTO_MARK_READ
+
+- **Description:** Automatically mark all incoming messages as read
+- **Default:** `false`
+- **Values:** `true`, `false`
+- **Example:** `WHATSAPP_AUTO_MARK_READ=true`
+- **CLI Flag:** `--auto-mark-read=true`
+
+### WHATSAPP_AUTO_REJECT_CALL
+
+- **Description:** Automatically reject all incoming voice/video calls
+- **Default:** `false`
+- **Values:** `true`, `false`
+- **Example:** `WHATSAPP_AUTO_REJECT_CALL=true`
+- **CLI Flag:** `--auto-reject-call=true`
+
+<Note>
+When enabled, call events will still be sent to webhooks. See the [Webhook Documentation](/api-reference/webhooks) for call event payload structure.
+</Note>
+
+### WHATSAPP_AUTO_DOWNLOAD_MEDIA
+
+- **Description:** Automatically download media from incoming messages (images, videos, documents)
+- **Default:** `true`
+- **Values:** `true`, `false`
+- **Example:** `WHATSAPP_AUTO_DOWNLOAD_MEDIA=false`
+- **CLI Flag:** `--auto-download-media=false`
+
+### WHATSAPP_WEBHOOK
+
+- **Description:** Webhook URL(s) to receive events (comma-separated for multiple endpoints)
+- **Default:** None
+- **Example:** `WHATSAPP_WEBHOOK=https://webhook.site/xxx` or `WHATSAPP_WEBHOOK=https://api1.com/hook,https://api2.com/hook`
+- **CLI Flag:** `--webhook=https://webhook.site/xxx`
+
+<Note>
+Webhook events include messages, reactions, group events, and more. See the [Webhook Documentation](/api-reference/webhooks) for payload details.
+</Note>
+
+### WHATSAPP_WEBHOOK_SECRET
+
+- **Description:** Secret key for webhook HMAC signature validation (used to verify webhook authenticity)
+- **Default:** `secret`
+- **Example:** `WHATSAPP_WEBHOOK_SECRET=super-secret-key-change-this`
+- **CLI Flag:** `--webhook-secret=your-secret`
+
+<Warning>
+**Security:** Always change the default secret in production. The HMAC signature is sent in the `X-Hub-Signature-256` header.
+</Warning>
+
+### WHATSAPP_WEBHOOK_INSECURE_SKIP_VERIFY
+
+- **Description:** Skip TLS certificate verification for webhook requests (insecure)
+- **Default:** `false`
+- **Values:** `true`, `false`
+- **Example:** `WHATSAPP_WEBHOOK_INSECURE_SKIP_VERIFY=true`
+- **CLI Flag:** `--webhook-insecure-skip-verify=true`
+
+<Warning>
+**Security Risk:** Only use this in development/testing or with Cloudflare tunnels. Never use in production with untrusted endpoints.
+</Warning>
+
+**Common use cases:**
+- Development with self-signed certificates
+- Cloudflare tunnels (provide their own security layer)
+- Internal networks with custom CA certificates
+
+### WHATSAPP_WEBHOOK_EVENTS
+
+- **Description:** Whitelist of events to forward to webhooks (comma-separated, empty = all events)
+- **Default:** None (all events forwarded)
+- **Example:** `WHATSAPP_WEBHOOK_EVENTS=message,message.ack,group.participants`
+- **CLI Flag:** `--webhook-events=message,message.ack`
+
+**Available Events:**
+
+| Event | Description |
+|-------|-------------|
+| `message` | Text, media, contact, location messages |
+| `message.reaction` | Emoji reactions to messages |
+| `message.revoked` | Deleted/revoked messages |
+| `message.edited` | Edited messages |
+| `message.ack` | Delivery and read receipts |
+| `message.deleted` | Messages deleted for the user |
+| `group.participants` | Group member join/leave/promote/demote |
+| `group.joined` | You were added to a group |
+| `newsletter.joined` | You subscribed to a newsletter/channel |
+| `newsletter.left` | You unsubscribed from a newsletter |
+| `newsletter.message` | New message(s) in a newsletter |
+| `newsletter.mute` | Newsletter mute setting changed |
+| `call.offer` | Incoming call received |
+
+### WHATSAPP_WEBHOOK_INCLUDE_OUTGOING
+
+- **Description:** Include outgoing messages in webhook events (messages you send)
+- **Default:** `false`
+- **Values:** `true`, `false`
+- **Example:** `WHATSAPP_WEBHOOK_INCLUDE_OUTGOING=true`
+- **CLI Flag:** None (environment variable only)
+
+### WHATSAPP_ACCOUNT_VALIDATION
+
+- **Description:** Enable account validation before operations
+- **Default:** `true`
+- **Values:** `true`, `false`
+- **Example:** `WHATSAPP_ACCOUNT_VALIDATION=false`
+- **CLI Flag:** `--account-validation=false`
+
+<Note>
+Disabling this can improve performance but may allow operations on invalid phone numbers.
+</Note>
+
+### WHATSAPP_PRESENCE_ON_CONNECT
+
+- **Description:** Presence status to set when connecting to WhatsApp
+- **Default:** `unavailable`
+- **Values:** `available`, `unavailable`, `none`
+- **Example:** `WHATSAPP_PRESENCE_ON_CONNECT=unavailable`
+- **CLI Flag:** `--presence-on-connect=unavailable`
+
+**Options:**
+
+- `available` — Mark as online (suppresses phone notifications, others see you online)
+- `unavailable` — Register pushname without going online (default, preserves phone notifications)
+- `none` — Skip presence entirely (pushname won't be registered, contacts may see "-" as your name)
+
+### WHATSAPP_CHAT_STORAGE
+
+- **Description:** Enable automatic storage of chats and messages to database
+- **Default:** `true`
+- **Values:** `true`, `false`
+- **Example:** `WHATSAPP_CHAT_STORAGE=false`
+- **CLI Flag:** None (environment variable only)
+
+<Note>
+Disabling this will prevent message history from being stored in the database. Webhooks will still work.
+</Note>
+
+## Chatwoot Integration
+
+### CHATWOOT_ENABLED
+
+- **Description:** Enable Chatwoot CRM integration
+- **Default:** `false`
+- **Values:** `true`, `false`
+- **Example:** `CHATWOOT_ENABLED=true`
+- **CLI Flag:** None (environment variable only)
+
+<Note>
+For complete Chatwoot integration guide, see the [Chatwoot Documentation](https://github.com/aldinokemal/go-whatsapp-web-multidevice/blob/main/docs/chatwoot.md).
+</Note>
+
+### CHATWOOT_URL
+
+- **Description:** Chatwoot instance URL
+- **Default:** None
+- **Example:** `CHATWOOT_URL=https://app.chatwoot.com`
+- **CLI Flag:** None (environment variable only)
+
+### CHATWOOT_API_TOKEN
+
+- **Description:** Chatwoot API access token
+- **Default:** None
+- **Example:** `CHATWOOT_API_TOKEN=your-api-token-here`
+- **CLI Flag:** None (environment variable only)
+
+<Warning>
+**Security:** Keep your API token secret. Never commit it to version control.
+</Warning>
+
+### CHATWOOT_ACCOUNT_ID
+
+- **Description:** Chatwoot account ID
+- **Default:** None
+- **Example:** `CHATWOOT_ACCOUNT_ID=12345`
+- **CLI Flag:** None (environment variable only)
+
+### CHATWOOT_INBOX_ID
+
+- **Description:** Chatwoot inbox ID
+- **Default:** None
+- **Example:** `CHATWOOT_INBOX_ID=67890`
+- **CLI Flag:** None (environment variable only)
+
+### CHATWOOT_DEVICE_ID
+
+- **Description:** WhatsApp device ID for Chatwoot (for multi-device setups)
+- **Default:** None
+- **Example:** `CHATWOOT_DEVICE_ID=628xxx@s.whatsapp.net`
+- **CLI Flag:** None (environment variable only)
+
+### CHATWOOT_IMPORT_MESSAGES
+
+- **Description:** Enable message history sync to Chatwoot on connect
+- **Default:** `false`
+- **Values:** `true`, `false`
+- **Example:** `CHATWOOT_IMPORT_MESSAGES=true`
+- **CLI Flag:** None (environment variable only)
+
+### CHATWOOT_DAYS_LIMIT_IMPORT_MESSAGES
+
+- **Description:** Number of days of message history to import to Chatwoot
+- **Default:** `3`
+- **Example:** `CHATWOOT_DAYS_LIMIT_IMPORT_MESSAGES=7`
+- **CLI Flag:** None (environment variable only)
+
+## Complete Example Configuration
+
+### .env File
+
+```bash
+# Application Settings
+APP_PORT=3000
+APP_HOST=0.0.0.0
+APP_DEBUG=false
+APP_OS=MyCompany
+APP_BASIC_AUTH=admin:secure-password-here
+APP_BASE_PATH=
+APP_TRUSTED_PROXIES=0.0.0.0/0
+
+# Database Settings
+DB_URI="file:storages/whatsapp.db?_foreign_keys=on"
+DB_KEYS_URI="file::memory:?cache=shared&_foreign_keys=on"
+
+# WhatsApp Settings
+WHATSAPP_AUTO_REPLY="Thanks for contacting us. We'll respond soon."
+WHATSAPP_AUTO_MARK_READ=false
+WHATSAPP_AUTO_REJECT_CALL=true
+WHATSAPP_AUTO_DOWNLOAD_MEDIA=true
+WHATSAPP_WEBHOOK=https://api.example.com/webhook
+WHATSAPP_WEBHOOK_SECRET=super-secret-key-change-this
+WHATSAPP_WEBHOOK_INSECURE_SKIP_VERIFY=false
+WHATSAPP_WEBHOOK_EVENTS=message,message.ack,group.participants
+WHATSAPP_WEBHOOK_INCLUDE_OUTGOING=false
+WHATSAPP_ACCOUNT_VALIDATION=true
+WHATSAPP_PRESENCE_ON_CONNECT=unavailable
+WHATSAPP_CHAT_STORAGE=true
+
+# Chatwoot Integration (Optional)
+CHATWOOT_ENABLED=false
+CHATWOOT_URL=https://app.chatwoot.com
+CHATWOOT_API_TOKEN=your-api-token
+CHATWOOT_ACCOUNT_ID=12345
+CHATWOOT_INBOX_ID=67890
+CHATWOOT_DEVICE_ID=
+CHATWOOT_IMPORT_MESSAGES=false
+CHATWOOT_DAYS_LIMIT_IMPORT_MESSAGES=3
+```
+
+### Docker Compose with Environment Variables
+
+```yaml
+services:
+  whatsapp:
+    image: aldinokemal2104/go-whatsapp-web-multidevice
+    container_name: whatsapp
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - whatsapp:/app/storages
+    environment:
+      # Application
+      - APP_PORT=3000
+      - APP_HOST=0.0.0.0
+      - APP_DEBUG=false
+      - APP_OS=MyCompany
+      - APP_BASIC_AUTH=admin:secure-password
+      
+      # Database
+      - DB_URI=file:storages/whatsapp.db?_foreign_keys=on
+      
+      # WhatsApp
+      - WHATSAPP_AUTO_REPLY=Thanks for your message
+      - WHATSAPP_AUTO_REJECT_CALL=true
+      - WHATSAPP_WEBHOOK=https://api.example.com/webhook
+      - WHATSAPP_WEBHOOK_SECRET=your-secret-key
+      - WHATSAPP_WEBHOOK_EVENTS=message,message.ack
+      - WHATSAPP_PRESENCE_ON_CONNECT=unavailable
+    command:
+      - rest
+
+volumes:
+  whatsapp:
+```
+
+## CLI Flag Reference
+
+All configuration options can also be set via command-line flags:
+
+```bash
+./whatsapp rest \
+  --port=3000 \
+  --host=0.0.0.0 \
+  --debug=false \
+  --os=MyCompany \
+  --basic-auth=admin:password \
+  --base-path=/api \
+  --autoreply="Thanks for your message" \
+  --auto-mark-read=true \
+  --auto-reject-call=true \
+  --auto-download-media=true \
+  --webhook=https://api.example.com/webhook \
+  --webhook-secret=secret-key \
+  --webhook-events=message,message.ack \
+  --webhook-insecure-skip-verify=false \
+  --account-validation=false \
+  --presence-on-connect=unavailable
+```
+
+View all available flags:
+
+```bash
+./whatsapp rest --help
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Docker Deployment" icon="docker" href="/deployment/docker">
+    Deploy with Docker containers
+  </Card>
+  <Card title="Binary Deployment" icon="file-binary" href="/deployment/binary">
+    Deploy with pre-built binaries
+  </Card>
+</CardGroup>

@@ -1,0 +1,483 @@
+---
+title: 'Send Link'
+openapi: 'POST /send/link'
+---
+
+Send a link with automatic preview generation to a WhatsApp number or group. WhatsApp automatically fetches and displays a preview card with the page title, description, and thumbnail.
+
+<Note>
+WhatsApp automatically generates rich previews for links, showing the page title, description, and image thumbnail when available.
+</Note>
+
+## Endpoint
+
+```
+POST /send/link
+```
+
+## Headers
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered.
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Request Body
+
+<ParamField body="phone" type="string" required>
+  Phone number with country code and WhatsApp suffix.
+  
+  **Format:** `{country_code}{phone_number}@s.whatsapp.net`
+  
+  **Example:** `6289685024051@s.whatsapp.net`
+</ParamField>
+
+<ParamField body="link" type="string" required>
+  The URL to send. WhatsApp will automatically fetch preview metadata from the page.
+  
+  **Format:** Must include protocol (http:// or https://)
+  
+  **Example:** `"https://google.com"`
+</ParamField>
+
+<ParamField body="caption" type="string">
+  Optional caption text to accompany the link. This text appears above the link preview.
+  
+  **Example:** `"Halo ini contoh caption"`
+</ParamField>
+
+<ParamField body="is_forwarded" type="boolean" default={false}>
+  Mark the message as forwarded.
+</ParamField>
+
+<ParamField body="duration" type="integer">
+  Disappearing message duration in seconds (optional).
+  
+  **Common values:**
+  - `86400` - 24 hours
+  - `604800` - 7 days
+  - `7776000` - 90 days
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response status code. Returns `"SUCCESS"` on successful send.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message.
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="message_id" type="string">
+    Unique identifier for the sent message.
+    
+    **Example:** `"3EB0B430B6F8F1D0E053AC120E0A9E5C"`
+  </ResponseField>
+  
+  <ResponseField name="status" type="string">
+    Detailed status message.
+  </ResponseField>
+</ResponseField>
+
+## Code Examples
+
+<CodeGroup>
+
+```bash Basic Link
+curl -X POST http://localhost:3000/send/link \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "link": "https://google.com"
+  }'
+```
+
+```bash Link with Caption
+curl -X POST http://localhost:3000/send/link \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "link": "https://example.com/article",
+    "caption": "Check out this interesting article!"
+  }'
+```
+
+```bash YouTube Video
+curl -X POST http://localhost:3000/send/link \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "link": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "caption": "Must watch video! 🎥"
+  }'
+```
+
+```bash Product Link
+curl -X POST http://localhost:3000/send/link \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "link": "https://shop.example.com/products/item-123",
+    "caption": "New arrival! Limited stock available 🛒"
+  }'
+```
+
+```bash Group Link Share
+curl -X POST http://localhost:3000/send/link \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "120363025982934543@g.us",
+    "link": "https://docs.example.com/meeting-notes",
+    "caption": "Meeting notes from today"
+  }'
+```
+
+```bash Disappearing Link
+curl -X POST http://localhost:3000/send/link \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "link": "https://example.com/temporary-offer",
+    "caption": "Limited time offer - expires soon!",
+    "duration": 86400
+  }'
+```
+
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": {
+    "message_id": "3EB0B430B6F8F1D0E053AC120E0A9E5C",
+    "status": "Link sent successfully"
+  }
+}
+```
+
+## Link Preview Generation
+
+WhatsApp automatically generates rich previews for links by fetching Open Graph metadata from the target page:
+
+### What Gets Displayed
+
+1. **Page Title:** From `<title>` or `og:title` meta tag
+2. **Description:** From `og:description` or meta description
+3. **Thumbnail Image:** From `og:image` meta tag
+4. **Site Name:** From `og:site_name` meta tag
+5. **URL:** The actual link URL
+
+### Preview Generation Process
+
+1. API sends link to WhatsApp
+2. WhatsApp fetches the page metadata
+3. Preview card is generated automatically
+4. Message displays with rich preview
+
+<Info>
+Preview generation happens on WhatsApp's servers, not on your API server. The quality and content of previews depend on the target website's metadata.
+</Info>
+
+## Use Cases
+
+### Content Sharing
+
+Share blog posts, articles, and news:
+
+```bash
+curl -X POST http://localhost:3000/send/link \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "link": "https://blog.example.com/latest-post",
+    "caption": "Our latest blog post is live! 🚀"
+  }'
+```
+
+### E-Commerce
+
+Share product pages with automatic preview:
+
+```bash
+curl -X POST http://localhost:3000/send/link \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "link": "https://shop.example.com/summer-collection",
+    "caption": "Summer Sale! Up to 50% off ☀️🛍️"
+  }'
+```
+
+### Event Promotion
+
+Share event registration or information pages:
+
+```bash
+curl -X POST http://localhost:3000/send/link \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "120363025982934543@g.us",
+    "link": "https://events.example.com/annual-conference",
+    "caption": "Registration now open! Early bird pricing ends soon 🎫"
+  }'
+```
+
+### Documentation & Resources
+
+Share documentation, guides, and resources:
+
+```bash
+curl -X POST http://localhost:3000/send/link \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "link": "https://docs.example.com/getting-started",
+    "caption": "Getting Started Guide 📚"
+  }'
+```
+
+### Video Content
+
+Share YouTube videos or other video platforms:
+
+```bash
+curl -X POST http://localhost:3000/send/link \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "link": "https://www.youtube.com/watch?v=example",
+    "caption": "Tutorial: How to use our API 🎥"
+  }'
+```
+
+### Social Media
+
+Share social media posts and profiles:
+
+```bash
+curl -X POST http://localhost:3000/send/link \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "link": "https://twitter.com/example/status/123456",
+    "caption": "Check out our latest announcement on Twitter!"
+  }'
+```
+
+## Optimizing Link Previews
+
+To ensure your links display attractive previews, optimize your web pages with Open Graph meta tags:
+
+### Essential Meta Tags
+
+```html
+<!-- Page Title -->
+<meta property="og:title" content="Your Page Title" />
+
+<!-- Description -->
+<meta property="og:description" content="A compelling description of your page" />
+
+<!-- Image -->
+<meta property="og:image" content="https://example.com/image.jpg" />
+
+<!-- URL -->
+<meta property="og:url" content="https://example.com/page" />
+
+<!-- Site Name -->
+<meta property="og:site_name" content="Your Site Name" />
+
+<!-- Type -->
+<meta property="og:type" content="website" />
+```
+
+### Image Recommendations
+
+**Dimensions:**
+- Minimum: 200x200 pixels
+- Recommended: 1200x630 pixels (Facebook/WhatsApp standard)
+- Aspect ratio: 1.91:1 preferred
+
+**Format:**
+- JPEG or PNG
+- Under 1MB file size
+- High quality, clear image
+
+**Content:**
+- Clear, recognizable imagery
+- Avoid text-heavy images
+- High contrast for mobile viewing
+
+## Best Practices
+
+1. **Always Include Protocol**
+   ```json
+   // ✅ Correct
+   {"link": "https://example.com"}
+   
+   // ❌ Incorrect
+   {"link": "example.com"}
+   ```
+
+2. **Use HTTPS When Possible**
+   - More secure
+   - Better preview generation
+   - Builds trust with recipients
+
+3. **Add Compelling Captions**
+   - Provide context for the link
+   - Use emojis to grab attention
+   - Include call-to-action
+   - Keep it concise but informative
+
+4. **Test Link Previews**
+   - Send test messages to verify preview appearance
+   - Check on both mobile and desktop
+   - Ensure images load correctly
+   - Verify title and description are accurate
+
+5. **Short Links**
+   - Use URL shorteners for long URLs
+   - Track clicks with shortened links
+   - Make links more shareable
+   - Examples: bit.ly, tinyurl.com
+
+6. **Track Engagement**
+   - Use UTM parameters for analytics
+   - Create unique tracking links
+   - Monitor click-through rates
+   - Example: `?utm_source=whatsapp&utm_medium=api`
+
+## Link Types
+
+### Website Links
+```bash
+curl -X POST http://localhost:3000/send/link \
+  -d '{"phone": "...", "link": "https://www.example.com"}'
+```
+
+### Deep Links (Mobile Apps)
+```bash
+# App store links work too
+curl -X POST http://localhost:3000/send/link \
+  -d '{"phone": "...", "link": "https://apps.apple.com/app/id123456"}'
+```
+
+### File Downloads
+```bash
+# Direct download links
+curl -X POST http://localhost:3000/send/link \
+  -d '{"phone": "...", "link": "https://example.com/files/document.pdf"}'
+```
+
+### Video Platforms
+```bash
+# YouTube, Vimeo, etc.
+curl -X POST http://localhost:3000/send/link \
+  -d '{"phone": "...", "link": "https://vimeo.com/123456789"}'
+```
+
+### Maps & Locations
+```bash
+# Google Maps links
+curl -X POST http://localhost:3000/send/link \
+  -d '{"phone": "...", "link": "https://goo.gl/maps/example"}'
+```
+
+## UTM Tracking Example
+
+Add tracking parameters to monitor campaign performance:
+
+```bash
+curl -X POST http://localhost:3000/send/link \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: my-device" \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "link": "https://example.com/product?utm_source=whatsapp&utm_medium=api&utm_campaign=summer_sale",
+    "caption": "Exclusive offer just for you!"
+  }'
+```
+
+**UTM Parameters:**
+- `utm_source=whatsapp` - Traffic source
+- `utm_medium=api` - Marketing medium
+- `utm_campaign=summer_sale` - Campaign name
+- `utm_content=variant_a` - Content variation (optional)
+- `utm_term=keyword` - Keywords (optional)
+
+## Preview Troubleshooting
+
+### No Preview Shows
+1. **Check Open Graph tags** - Verify page has og:title, og:description, og:image
+2. **HTTPS Required** - Some sites require HTTPS for previews
+3. **Page Accessible** - Ensure page is publicly accessible
+4. **WhatsApp Cache** - WhatsApp may cache old previews
+5. **Robots.txt** - Check if page allows crawler access
+
+### Wrong Image Shows
+1. **Update og:image tag** - Specify correct image URL
+2. **Image Size** - Ensure image meets minimum dimensions
+3. **Image Format** - Use JPEG or PNG
+4. **Clear Cache** - Wait for WhatsApp to refresh cache
+
+### Preview Takes Long Time
+1. **Page Load Speed** - Optimize page performance
+2. **Image Size** - Compress large images
+3. **Server Response** - Improve server response time
+4. **CDN Usage** - Use CDN for faster image delivery
+
+## Limitations
+
+<Warning>
+Be aware of these limitations with link messages.
+</Warning>
+
+1. **Preview Caching:** WhatsApp caches link previews; updates may not appear immediately
+2. **External Dependency:** Preview quality depends on target website's metadata
+3. **Loading Time:** Large images may cause slow preview generation
+4. **Blocked Sites:** Some domains may be blocked or restricted
+5. **No Custom Preview:** Cannot override WhatsApp's automatic preview generation
+
+## Error Responses
+
+<ResponseField name="400" type="Bad Request">
+  Common causes:
+  - Invalid phone number format
+  - Missing link parameter
+  - Invalid URL format (missing protocol)
+  - Empty link string
+</ResponseField>
+
+<ResponseField name="500" type="Internal Server Error">
+  Common causes:
+  - Device not connected
+  - Network connectivity issues
+  - WhatsApp service temporarily unavailable
+</ResponseField>
+
+## Related Endpoints
+
+- [Send Text](/api/send/text) - Send plain text messages
+- [Send Image](/api/send/image) - Send images directly
+- [Send File](/api/send/file) - Send documents
+- [Send Location](/api/send/location) - Share location coordinates

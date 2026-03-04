@@ -1,0 +1,189 @@
+---
+title: 'Device management'
+description: 'Understanding device instances, IDs, and lifecycle in GOWA multi-device architecture'
+---
+
+GOWA supports managing multiple WhatsApp accounts simultaneously within a single server instance. Each WhatsApp connection is represented as a "device" with its own state, session, and configuration.
+
+## Device concepts
+
+### Device ID vs JID
+
+Two distinct identifiers are used throughout the system:
+
+<CardGroup cols={2}>
+  <Card title="Device ID" icon="id-card">
+    User-defined alias or auto-generated UUID
+    
+    - Used in API requests (`X-Device-Id` header)
+    - Used in URLs (`/devices/{device_id}`)
+    - Example: `my-business-account`, `customer-support`
+  </Card>
+  <Card title="JID (WhatsApp ID)" icon="hashtag">
+    WhatsApp-assigned identifier
+    
+    - Format: `628123456789@s.whatsapp.net`
+    - Assigned after successful login
+    - Used for database queries and webhook payloads
+  </Card>
+</CardGroup>
+
+<Warning>
+Confusing Device ID and JID causes data isolation bugs. Always use the correct identifier for your use case.
+</Warning>
+
+### Device instance
+
+Each device maintains:
+
+- **WhatsApp connection** - Active WebSocket to WhatsApp servers
+- **Session storage** - SQLite database with encryption keys
+- **Message history** - Chat and message records
+- **Event handlers** - Webhook forwarding, auto-reply, auto-read
+- **Media storage** - Downloaded images, videos, files
+
+## Device lifecycle
+
+<Steps>
+  <Step title="Create device">
+    Register a new device slot with a custom ID or auto-generated UUID:
+    
+    ```bash cURL
+    curl -X POST http://localhost:3000/devices \
+      -H "Content-Type: application/json" \
+      -d '{"device_id": "my-device"}'
+    ```
+    
+    Initial state: `disconnected`
+  </Step>
+
+  <Step title="Login to WhatsApp">
+    Choose authentication method:
+    
+    <Tabs>
+      <Tab title="QR Code">
+        ```bash
+        curl http://localhost:3000/devices/my-device/login
+        ```
+        
+        Scan QR with WhatsApp mobile app.
+      </Tab>
+      <Tab title="Pairing Code">
+        ```bash
+        curl -X POST http://localhost:3000/devices/my-device/login/code \
+          -H "Content-Type: application/json" \
+          -d '{"phone": "628123456789"}'
+        ```
+        
+        Enter code in WhatsApp mobile app.
+      </Tab>
+    </Tabs>
+    
+    State transitions: `disconnected` → `connecting` → `connected`
+  </Step>
+
+  <Step title="Use device">
+    All API requests require device scoping:
+    
+    ```bash
+    curl -X POST http://localhost:3000/send/message \
+      -H "X-Device-Id: my-device" \
+      -H "Content-Type: application/json" \
+      -d '{"phone": "628987654321@s.whatsapp.net", "message": "Hello"}'
+    ```
+  </Step>
+
+  <Step title="Logout and remove">
+    Proper cleanup sequence:
+    
+    ```bash
+    # 1. Logout from WhatsApp (removes from linked devices)
+    curl -X POST http://localhost:3000/devices/my-device/logout
+    
+    # 2. Remove device from server
+    curl -X DELETE http://localhost:3000/devices/my-device
+    ```
+  </Step>
+</Steps>
+
+## Device states
+
+| State | Description | Can send messages? |
+|-------|-------------|--------------------|
+| `disconnected` | Created but not logged in | ❌ |
+| `connecting` | Authentication in progress | ❌ |
+| `connected` | Logged in and ready | ✅ |
+| `reconnecting` | Temporary connection loss | ⚠️ Queued |
+| `logged_out` | Session invalidated | ❌ |
+
+## Default device behavior
+
+If only **one device** is registered:
+
+- `X-Device-Id` header is **optional**
+- All requests automatically use the single device
+- Simplifies single-account deployments
+
+With **multiple devices**:
+
+- `X-Device-Id` header is **required**
+- Missing header returns `400 DEVICE_ID_REQUIRED` error
+- Each device maintains independent state
+
+## Device manager
+
+Central orchestrator (`src/infrastructure/whatsapp/device_manager.go`) handles:
+
+- Device instance lifecycle
+- Connection pooling
+- Session persistence
+- Event distribution
+- Database scoping
+
+<Accordion title="Implementation reference">
+  ```go
+  // Key responsibilities:
+  // - CreateDevice() - Register new device slot
+  // - GetDevice() - Retrieve device by ID
+  // - LoginDevice() - Initiate WhatsApp login
+  // - LogoutDevice() - Clean session and disconnect
+  // - RemoveDevice() - Delete from registry
+  ```
+  
+  Source: `src/infrastructure/whatsapp/device_manager.go` (602 lines)
+</Accordion>
+
+## Storage isolation
+
+Each device has isolated storage:
+
+```
+storages/
+├── 628111111111@s.whatsapp.net/  # Device 1 JID
+│   ├── session.db                 # Encryption keys
+│   └── media/                      # Downloaded files
+└── 628222222222@s.whatsapp.net/  # Device 2 JID
+    ├── session.db
+    └── media/
+```
+
+<Warning>
+Database tables (`chats`, `messages`) use `device_id` column for data isolation. Always include `device_id` in queries to prevent cross-device data leaks.
+</Warning>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/concepts/authentication">
+    Learn about QR code and pairing code login methods
+  </Card>
+  <Card title="Device scoping" icon="layer-group" href="/api/device-scoping">
+    Understand X-Device-Id header and query parameters
+  </Card>
+  <Card title="Multi-device guide" icon="users" href="/concepts/multi-device">
+    Best practices for managing multiple accounts
+  </Card>
+  <Card title="Device API" icon="code" href="/api/devices/list">
+    Complete device management API reference
+  </Card>
+</CardGroup>

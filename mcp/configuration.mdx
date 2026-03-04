@@ -1,0 +1,353 @@
+---
+title: MCP Client Configuration
+description: Configure Cursor, Claude Desktop, and other MCP clients to connect to GOWA WhatsApp API
+---
+
+## Overview
+
+This page provides configuration examples for popular MCP-enabled AI tools. All clients connect to the same SSE endpoint but may use different configuration formats.
+
+<Note>
+Before configuring clients, ensure the [MCP server is running](/mcp/setup) on `http://localhost:8080`.
+</Note>
+
+## Cursor IDE
+
+Cursor is a popular AI-powered code editor with built-in MCP support.
+
+### Configuration File Location
+
+<Tabs>
+  <Tab title="macOS">
+    ```
+    ~/.cursor/mcp.json
+    ```
+  </Tab>
+  <Tab title="Linux">
+    ```
+    ~/.config/cursor/mcp.json
+    ```
+  </Tab>
+  <Tab title="Windows">
+    ```
+    %APPDATA%\Cursor\mcp.json
+    ```
+  </Tab>
+</Tabs>
+
+### Configuration Example
+
+Add the following to your `mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "whatsapp": {
+      "url": "http://localhost:8080/sse"
+    }
+  }
+}
+```
+
+### Verifying the Connection
+
+1. Restart Cursor after saving the configuration
+2. Open the MCP panel (usually in the sidebar)
+3. You should see "whatsapp" listed as an available server
+4. Click to connect and verify tools are loaded
+
+<Tip>
+In Cursor, you can test MCP tools directly in the chat by typing commands like:
+```
+@whatsapp check connection status
+```
+</Tip>
+
+## Claude Desktop
+
+Claude Desktop supports MCP through a JSON configuration file.
+
+### Configuration File Location
+
+<Tabs>
+  <Tab title="macOS">
+    ```
+    ~/Library/Application Support/Claude/claude_desktop_config.json
+    ```
+  </Tab>
+  <Tab title="Windows">
+    ```
+    %APPDATA%\Claude\claude_desktop_config.json
+    ```
+  </Tab>
+</Tabs>
+
+### Configuration Example
+
+```json
+{
+  "mcpServers": {
+    "gowa-whatsapp": {
+      "transport": "sse",
+      "url": "http://localhost:8080/sse",
+      "name": "GOWA WhatsApp API",
+      "version": "8.0.0"
+    }
+  }
+}
+```
+
+### Testing in Claude Desktop
+
+1. Save the configuration file
+2. Restart Claude Desktop
+3. In a conversation, ask Claude to list available tools:
+   ```
+   What WhatsApp tools do you have access to?
+   ```
+4. Claude should respond with the list of MCP tools
+
+## Cline (VS Code Extension)
+
+Cline is a VS Code extension that supports MCP.
+
+### Configuration
+
+1. Open VS Code Settings (JSON)
+2. Add the following:
+
+```json
+{
+  "cline.mcpServers": {
+    "whatsapp": {
+      "url": "http://localhost:8080/sse",
+      "transport": "sse"
+    }
+  }
+}
+```
+
+3. Reload VS Code
+4. Open Cline and verify the WhatsApp server is connected
+
+## Generic MCP Client
+
+For any MCP-compatible client that supports SSE transport:
+
+### Required Configuration
+
+```json
+{
+  "transport": "sse",
+  "sse_endpoint": "http://localhost:8080/sse",
+  "message_endpoint": "http://localhost:8080/message"
+}
+```
+
+### Server Metadata
+
+```json
+{
+  "name": "WhatsApp Web Multidevice MCP Server",
+  "version": "8.0.0",
+  "capabilities": {
+    "tools": true,
+    "resources": true,
+    "resourceSubscribe": true
+  }
+}
+```
+
+## Remote Server Configuration
+
+<Warning>
+Exposing the MCP server over the internet is **not recommended** for production. MCP has no built-in authentication beyond the connection itself.
+</Warning>
+
+If you must connect to a remote MCP server:
+
+### Using SSH Tunnel (Recommended)
+
+```bash
+# On your local machine
+ssh -L 8080:localhost:8080 user@remote-server
+```
+
+Then configure your MCP client to use `http://localhost:8080/sse` as usual.
+
+### Direct Remote Connection
+
+1. Start the MCP server with `--host 0.0.0.0`:
+   ```bash
+   ./whatsapp mcp --host 0.0.0.0 --port 8080
+   ```
+
+2. Configure your client:
+   ```json
+   {
+     "mcpServers": {
+       "whatsapp": {
+         "url": "http://remote-server-ip:8080/sse"
+       }
+     }
+   }
+   ```
+
+<Note>
+Consider using a reverse proxy (nginx, Caddy) with TLS and authentication if remote access is required.
+</Note>
+
+## Docker Configuration
+
+When running the MCP server in Docker:
+
+### Docker Compose
+
+```yaml
+services:
+  whatsapp-mcp:
+    image: aldinokemal2104/go-whatsapp-web-multidevice
+    container_name: whatsapp-mcp
+    ports:
+      - "8080:8080"
+    volumes:
+      - whatsapp-data:/app/storages
+    command:
+      - mcp
+      - --host=0.0.0.0
+      - --port=8080
+
+volumes:
+  whatsapp-data:
+```
+
+### Client Configuration
+
+Connect to the exposed port:
+
+```json
+{
+  "mcpServers": {
+    "whatsapp": {
+      "url": "http://localhost:8080/sse"
+    }
+  }
+}
+```
+
+## Environment-Specific Settings
+
+### Development
+
+```json
+{
+  "mcpServers": {
+    "whatsapp-dev": {
+      "url": "http://localhost:8080/sse",
+      "reconnect": true,
+      "timeout": 30000
+    }
+  }
+}
+```
+
+### Production
+
+```json
+{
+  "mcpServers": {
+    "whatsapp-prod": {
+      "url": "https://whatsapp.example.com/sse",
+      "reconnect": true,
+      "timeout": 60000,
+      "tls": true
+    }
+  }
+}
+```
+
+## Testing the Configuration
+
+Once configured, test the connection using your AI tool:
+
+### 1. Check Connection Status
+
+Ask your AI assistant:
+```
+Check the WhatsApp connection status
+```
+
+Expected response:
+```
+Connected: true
+Logged in: false
+Device ID: (none - not authenticated)
+```
+
+### 2. List Available Tools
+
+```
+What WhatsApp tools are available?
+```
+
+The AI should list 40+ tools across connection, messaging, contacts, and groups.
+
+### 3. Test a Simple Tool
+
+```
+List my WhatsApp contacts
+```
+
+This invokes `whatsapp_list_contacts` and verifies end-to-end functionality.
+
+## Troubleshooting
+
+### Tools Not Appearing
+
+**Problem**: AI client doesn't show WhatsApp tools
+
+**Solutions**:
+1. Verify the MCP server is running (`http://localhost:8080/sse` should be accessible)
+2. Check the configuration file syntax (validate JSON)
+3. Restart the AI client after configuration changes
+4. Check client logs for connection errors
+
+### Connection Timeouts
+
+**Problem**: SSE connection times out
+
+**Solutions**:
+1. Increase timeout in client configuration:
+   ```json
+   {
+     "timeout": 60000
+   }
+   ```
+2. Check network connectivity
+3. Verify no proxy/firewall is blocking SSE
+
+### SSL/TLS Errors
+
+**Problem**: Certificate validation errors with HTTPS
+
+**Solutions**:
+1. Use a valid SSL certificate (Let's Encrypt recommended)
+2. For development only, some clients support `"insecure": true`
+3. Use SSH tunnel instead of direct HTTPS
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Connection Tools" icon="plug" href="/mcp/tools/connection">
+    Learn about login, logout, and status tools
+  </Card>
+  <Card title="Messaging Tools" icon="message" href="/mcp/tools/messaging">
+    Send messages, images, and more via MCP
+  </Card>
+  <Card title="Contacts & Chats" icon="address-book" href="/mcp/tools/contacts">
+    Query contacts, list chats, and download media
+  </Card>
+  <Card title="Group Management" icon="users" href="/mcp/tools/groups">
+    Create and manage WhatsApp groups
+  </Card>
+</CardGroup>

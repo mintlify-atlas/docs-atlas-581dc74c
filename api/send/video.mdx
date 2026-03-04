@@ -1,0 +1,424 @@
+---
+title: 'Send Video'
+openapi: 'POST /send/video'
+---
+
+Send a video message to a WhatsApp number or group. Supports video upload, URL-based videos, captions, compression, and view-once mode.
+
+<Note>
+Videos can be sent either by uploading a file or providing a URL. The API supports automatic compression and ephemeral view-once videos.
+</Note>
+
+## Endpoint
+
+```
+POST /send/video
+```
+
+## Headers
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered.
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `multipart/form-data` for file uploads.
+</ParamField>
+
+## Request Body (multipart/form-data)
+
+<ParamField body="phone" type="string" required>
+  Phone number with country code and WhatsApp suffix.
+  
+  **Format:** `{country_code}{phone_number}@s.whatsapp.net`
+  
+  **Example:** `6289685028129@s.whatsapp.net`
+</ParamField>
+
+<ParamField body="caption" type="string">
+  Optional caption text for the video. Supports up to 3000 characters.
+  
+  **Example:** `"ini contoh caption video"`
+</ParamField>
+
+<ParamField body="video" type="file">
+  Video file to upload. Supports common video formats (MP4, AVI, MOV, MKV, WebM).
+  
+  <Info>
+  Either `video` (file upload) or `video_url` must be provided, but not both.
+  </Info>
+</ParamField>
+
+<ParamField body="video_url" type="string">
+  URL of the video to send. The API will download and send the video from this URL.
+  
+  **Example:** `"https://example.com/sample.mp4"`
+  
+  <Info>
+  Either `video` (file upload) or `video_url` must be provided, but not both.
+  </Info>
+</ParamField>
+
+<ParamField body="view_once" type="boolean" default={false}>
+  Enable view-once mode. The video can only be viewed once by the recipient and will disappear after being opened.
+  
+  <Warning>
+  View-once videos cannot be forwarded, saved, or recorded without notification (on supported devices).
+  </Warning>
+</ParamField>
+
+<ParamField body="compress" type="boolean" default={false}>
+  Compress the video before sending to reduce file size. Highly recommended for large videos.
+  
+  <Note>
+  Compression may reduce video quality but significantly improves delivery speed and reduces bandwidth usage.
+  </Note>
+</ParamField>
+
+<ParamField body="duration" type="integer">
+  Disappearing message duration in seconds.
+  
+  **Common values:**
+  - `86400` - 24 hours
+  - `604800` - 7 days
+  - `7776000` - 90 days
+</ParamField>
+
+<ParamField body="is_forwarded" type="boolean" default={false}>
+  Mark the message as forwarded.
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response status code. Returns `"SUCCESS"` on successful send.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message.
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="message_id" type="string">
+    Unique identifier for the sent message.
+    
+    **Example:** `"3EB0B430B6F8F1D0E053AC120E0A9E5C"`
+  </ResponseField>
+  
+  <ResponseField name="status" type="string">
+    Detailed status message.
+  </ResponseField>
+</ResponseField>
+
+## Code Examples
+
+<CodeGroup>
+
+```bash File Upload
+curl -X POST http://localhost:3000/send/video \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "caption=Check out this amazing video!" \
+  -F "video=@/path/to/video.mp4"
+```
+
+```bash Video URL
+curl -X POST http://localhost:3000/send/video \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "caption=Tutorial video" \
+  -F "video_url=https://example.com/tutorial.mp4"
+```
+
+```bash Compressed Video
+curl -X POST http://localhost:3000/send/video \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "video=@/path/to/large-video.mp4" \
+  -F "compress=true" \
+  -F "caption=HD video (compressed for faster delivery)"
+```
+
+```bash View Once Video
+curl -X POST http://localhost:3000/send/video \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "video=@/path/to/private-video.mp4" \
+  -F "view_once=true"
+```
+
+```bash Disappearing Video
+curl -X POST http://localhost:3000/send/video \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "video=@/path/to/video.mp4" \
+  -F "caption=This will disappear in 24 hours" \
+  -F "duration=86400"
+```
+
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": {
+    "message_id": "3EB0B430B6F8F1D0E053AC120E0A9E5C",
+    "status": "Video sent successfully"
+  }
+}
+```
+
+## Features
+
+### Video Compression
+
+Enable compression to reduce file size while maintaining acceptable quality:
+
+```bash
+curl -X POST http://localhost:3000/send/video \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "video=@/path/to/4k-video.mp4" \
+  -F "compress=true"
+```
+
+**Benefits of compression:**
+- Reduces file size by 50-80%
+- Faster upload and delivery
+- Better for recipients with limited bandwidth
+- Reduces server storage costs
+
+**Compression settings:**
+- Resolution: Scaled to max 1280x720 (HD)
+- Bitrate: Optimized for mobile viewing
+- Format: Converted to H.264/MP4 if needed
+
+### View Once Videos
+
+Send ephemeral videos that can only be viewed once:
+
+```bash
+curl -X POST http://localhost:3000/send/video \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "video=@/path/to/sensitive-content.mp4" \
+  -F "view_once=true"
+```
+
+**View-once behavior:**
+- Recipient can watch video only once
+- Video disappears after being played
+- Sender is notified when video is opened
+- Cannot be forwarded or saved
+- Screenshot attempts may be detected on supported devices
+
+### URL-Based Video Sending
+
+Send videos directly from URLs:
+
+```bash
+curl -X POST http://localhost:3000/send/video \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "video_url=https://cdn.example.com/products/demo.mp4" \
+  -F "caption=Product Demo Video"
+```
+
+**Use cases:**
+- CDN-hosted videos
+- Cloud storage integration
+- Dynamic video generation
+- Third-party video platforms
+
+## Video Requirements
+
+### Supported Formats
+- **MP4** (.mp4) - Recommended, best compatibility
+- **AVI** (.avi) - Common format
+- **MOV** (.mov) - Apple format
+- **MKV** (.mkv) - High quality container
+- **WebM** (.webm) - Web format
+- **3GP** (.3gp) - Mobile format
+
+### Recommended Codec
+- **Video:** H.264 (AVC)
+- **Audio:** AAC
+- **Container:** MP4
+
+### File Size Limits
+
+<Warning>
+WhatsApp enforces strict video size limits.
+</Warning>
+
+- **Maximum file size:** 16MB (compressed)
+- **Maximum file size:** 64MB (uncompressed, before API processing)
+- **Recommended:** Under 10MB for reliable delivery
+- **With compression:** Can handle larger source files
+
+### Video Specifications
+
+**Resolution:**
+- Minimum: 144p (256x144)
+- Maximum: 1080p (1920x1080)
+- Recommended: 720p (1280x720)
+
+**Duration:**
+- Maximum: ~90 seconds for best delivery
+- Longer videos: Use compression or split into parts
+- No technical limit on duration
+
+**Aspect Ratio:**
+- Recommended: 16:9 (landscape) or 9:16 (portrait)
+- Square videos: 1:1
+- All aspect ratios supported
+
+**Frame Rate:**
+- Recommended: 24-30 FPS
+- Maximum: 60 FPS
+- Lower frame rates acceptable for certain content
+
+## Best Practices
+
+1. **Always Use Compression for Large Files**
+   ```bash
+   # For files > 5MB
+   -F "compress=true"
+   ```
+
+2. **Optimize Before Upload**
+   - Pre-encode videos in H.264/MP4
+   - Use 720p resolution for balance of quality/size
+   - Trim unnecessary content
+   - Adjust bitrate to 1-2 Mbps
+
+3. **Caption Guidelines**
+   - Keep captions concise and relevant
+   - Use captions to provide context
+   - Support emoji in captions
+
+4. **Choose the Right Method**
+   - Local files: Use file upload
+   - Cloud-hosted: Use `video_url`
+   - Automated systems: Use `video_url` with CDN
+
+5. **Handle Long Processing Times**
+   - Large videos take time to process
+   - Implement timeout handling (>60 seconds)
+   - Consider background job processing
+   - Notify users of upload progress
+
+6. **View Once for Sensitive Content**
+   - Private or confidential videos
+   - Time-sensitive content
+   - One-time instructions or codes
+
+## Video Processing
+
+The API automatically processes videos:
+
+### Without Compression
+- Format validation
+- Codec compatibility check
+- Thumbnail generation
+- Metadata extraction
+
+### With Compression
+- Resolution scaling (max 720p)
+- Bitrate optimization
+- Codec conversion to H.264
+- Audio normalization
+- File size reduction
+
+<Note>
+Video processing is CPU-intensive. Processing time increases with video duration and resolution. Large videos may take 30-60+ seconds to process.
+</Note>
+
+## Use Cases
+
+### Marketing & Promotions
+```bash
+curl -X POST http://localhost:3000/send/video \
+  -F "phone=120363025982934543@g.us" \
+  -F "video_url=https://cdn.brand.com/promo-july.mp4" \
+  -F "caption=🎉 Summer Sale! 50% OFF - Limited Time" \
+  -F "compress=true"
+```
+
+### Product Demonstrations
+```bash
+curl -X POST http://localhost:3000/send/video \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "video=@products/demo-product-x.mp4" \
+  -F "caption=Product X Demo - See it in action!"
+```
+
+### Tutorial Content
+```bash
+curl -X POST http://localhost:3000/send/video \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "video=@tutorials/setup-guide.mp4" \
+  -F "caption=Setup Tutorial - Follow these steps" \
+  -F "compress=true"
+```
+
+### Personal Video Messages
+```bash
+curl -X POST http://localhost:3000/send/video \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "video=@recordings/birthday-message.mp4" \
+  -F "caption=Happy Birthday! 🎂"
+```
+
+## Error Responses
+
+<ResponseField name="400" type="Bad Request">
+  Common causes:
+  - Invalid phone number format
+  - Missing both `video` and `video_url`
+  - Providing both `video` and `video_url`
+  - Unsupported video format
+  - File too large (>64MB before compression)
+  - Invalid video codec
+</ResponseField>
+
+<ResponseField name="500" type="Internal Server Error">
+  Common causes:
+  - Device not connected
+  - Failed to download video from URL
+  - Video processing/compression error
+  - FFmpeg not installed or configured
+  - Insufficient disk space
+  - Network timeout during upload
+</ResponseField>
+
+## Troubleshooting
+
+### Video Upload Fails
+1. Check file size (must be under 64MB)
+2. Verify video format is supported
+3. Try enabling compression
+4. Check device connection status
+5. Verify FFmpeg is installed on server
+
+### Long Processing Time
+1. Enable compression to speed up processing
+2. Reduce video resolution before upload
+3. Use shorter videos (under 60 seconds)
+4. Check server CPU/memory resources
+
+### Quality Issues
+1. Disable compression for high-quality needs
+2. Pre-encode video in H.264 at desired quality
+3. Use higher bitrate in source video
+4. Avoid re-compressing already compressed videos
+
+## Related Endpoints
+
+- [Send Image](/api/send/image) - Send image messages
+- [Send Audio](/api/send/audio) - Send audio messages
+- [Send File](/api/send/file) - Send document files
+- [Download Media](/api/message/download) - Download media from messages

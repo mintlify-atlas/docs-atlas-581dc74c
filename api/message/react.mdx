@@ -1,0 +1,79 @@
+---
+title: 'React to Message'
+openapi: 'POST /message/{message_id}/reaction'
+---
+
+Send an emoji reaction to a message. You can react to both messages you've sent and messages you've received.
+
+<Tip>
+To remove a reaction, send an empty string for the emoji parameter.
+</Tip>
+
+## Request
+
+<ParamField path="message_id" type="string" required>
+  The unique identifier of the message to react to
+</ParamField>
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+<ParamField body="phone" type="string" required>
+  Phone number with country code and WhatsApp suffix
+  
+  Example: `6289685024051@s.whatsapp.net`
+</ParamField>
+
+<ParamField body="emoji" type="string" required>
+  The emoji to react with. Use any standard emoji character.
+  
+  Example: `🙏`
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code (e.g., `SUCCESS`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message describing the result
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="message_id" type="string">
+    The ID of the original message
+  </ResponseField>
+  
+  <ResponseField name="status" type="string">
+    Status of the reaction operation
+  </ResponseField>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X POST \
+  'https://your-api-domain.com/message/3EB0B430B6F8F1D0E053AC120E0A9E5C/reaction' \
+  -H 'Content-Type: application/json' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password' \
+  -d '{
+    "phone": "6289685024051@s.whatsapp.net",
+    "emoji": "🙏"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": {
+    "message_id": "3EB0B430B6F8F1D0E053AC120E0A9E5C",
+    "status": "Reaction sent successfully"
+  }
+}
+```
+</ResponseExample>

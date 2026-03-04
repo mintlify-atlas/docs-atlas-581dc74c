@@ -1,0 +1,428 @@
+---
+title: Contacts & Chats Tools
+description: MCP tools for querying contacts, listing chats, retrieving messages, and downloading media
+---
+
+## Overview
+
+Contacts and chats tools provide read-only access to WhatsApp data. Use these to retrieve contact lists, search chats, fetch message history, and download media files.
+
+## whatsapp_list_contacts
+
+Retrieve all contacts available in the connected WhatsApp account.
+
+### Parameters
+
+None. This tool retrieves all contacts.
+
+### Returns
+
+```json
+{
+  "data": [
+    {
+      "name": "John Doe",
+      "phone": "628123456789@s.whatsapp.net",
+      "push_name": "John",
+      "is_business": false
+    },
+    {
+      "name": "Jane Smith",
+      "phone": "628987654321@s.whatsapp.net",
+      "push_name": "Jane",
+      "is_business": true
+    }
+  ]
+}
+```
+
+Fallback text: `"Found 2 contacts"`
+
+### Hints
+
+- **Read-only**: `true`
+- **Destructive**: `false`
+- **Idempotent**: `true`
+
+### Example Usage
+
+```
+List all my WhatsApp contacts
+```
+
+### Implementation Reference
+
+Source: `src/ui/mcp/query.go:40-64`
+
+## whatsapp_list_chats
+
+Retrieve recent chats with optional pagination and search filters.
+
+### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `limit` | number | No | `25` | Maximum number of chats to return (max 100) |
+| `offset` | number | No | `0` | Number of chats to skip from the start |
+| `search` | string | No | `""` | Filter chats whose name contains this text |
+| `has_media` | boolean | No | `false` | If true, return only chats that contain media messages |
+
+### Returns
+
+```json
+{
+  "data": [
+    {
+      "chat_jid": "628123456789@s.whatsapp.net",
+      "name": "John Doe",
+      "last_message": "Hey, how are you?",
+      "last_message_time": "2026-03-04T10:30:00Z",
+      "unread_count": 2,
+      "is_group": false,
+      "has_media": true
+    },
+    {
+      "chat_jid": "120363123456@g.us",
+      "name": "Project Team",
+      "last_message": "Meeting at 3 PM",
+      "last_message_time": "2026-03-04T09:15:00Z",
+      "unread_count": 0,
+      "is_group": true,
+      "has_media": false
+    }
+  ]
+}
+```
+
+Fallback text: `"Retrieved 2 chats (offset 0, limit 25)"`
+
+### Pagination
+
+To retrieve all chats, use `offset` and `limit`:
+
+```
+# Page 1 (first 25 chats)
+List the first 25 WhatsApp chats
+
+# Page 2 (next 25 chats)
+List WhatsApp chats with offset 25 and limit 25
+```
+
+### Filtering
+
+<Tabs>
+  <Tab title="Search by Name">
+    ```
+    List chats whose name contains "John"
+    ```
+  </Tab>
+  <Tab title="Media Only">
+    ```
+    List chats that contain media messages
+    ```
+  </Tab>
+  <Tab title="Combined Filters">
+    ```json
+    {
+      "name": "whatsapp_list_chats",
+      "arguments": {
+        "search": "Project",
+        "has_media": true,
+        "limit": 10
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Hints
+
+- **Read-only**: `true`
+- **Destructive**: `false`
+- **Idempotent**: `true`
+
+### Implementation Reference
+
+Source: `src/ui/mcp/query.go:66-129`
+
+## whatsapp_get_chat_messages
+
+Fetch messages from a specific chat, with optional pagination, search, and time filters.
+
+### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `chat_jid` | string | Yes | - | The chat JID (e.g., `628123456789@s.whatsapp.net` or `120363123456@g.us`) |
+| `limit` | number | No | `50` | Maximum number of messages to return (max 100) |
+| `offset` | number | No | `0` | Number of messages to skip from the start |
+| `start_time` | string | No | - | Filter messages sent after this RFC3339 timestamp |
+| `end_time` | string | No | - | Filter messages sent before this RFC3339 timestamp |
+| `media_only` | boolean | No | `false` | If true, return only messages containing media |
+| `is_from_me` | boolean | No | - | If provided, filter messages sent by you (true) or others (false) |
+| `search` | string | No | `""` | Full-text search within the chat history (case-insensitive) |
+
+### Returns
+
+```json
+{
+  "data": [
+    {
+      "message_id": "3EB0C767E8D4B2A9E4C3",
+      "chat_jid": "628123456789@s.whatsapp.net",
+      "sender": "628123456789@s.whatsapp.net",
+      "timestamp": "2026-03-04T10:30:00Z",
+      "message_text": "Hello, how are you?",
+      "is_from_me": false,
+      "has_media": false,
+      "media_type": null
+    },
+    {
+      "message_id": "3EB0C767E8D4B2A9E4C4",
+      "chat_jid": "628123456789@s.whatsapp.net",
+      "sender": "me",
+      "timestamp": "2026-03-04T10:32:00Z",
+      "message_text": "I'm doing great, thanks!",
+      "is_from_me": true,
+      "has_media": false,
+      "media_type": null
+    }
+  ]
+}
+```
+
+Fallback text: `"Retrieved 2 messages from 628123456789@s.whatsapp.net"`
+
+### Time Filtering
+
+Use RFC3339 timestamps to filter by time:
+
+```json
+{
+  "chat_jid": "628123456789@s.whatsapp.net",
+  "start_time": "2026-03-01T00:00:00Z",
+  "end_time": "2026-03-04T23:59:59Z"
+}
+```
+
+### Search Within Chat
+
+```
+Search for "meeting" in messages from chat 628123456789@s.whatsapp.net
+```
+
+### Media-Only Messages
+
+```
+Get media messages from chat 120363123456@g.us
+```
+
+### My Messages Only
+
+```json
+{
+  "chat_jid": "628123456789@s.whatsapp.net",
+  "is_from_me": true
+}
+```
+
+### Hints
+
+- **Read-only**: `true`
+- **Destructive**: `false`
+- **Idempotent**: `true`
+
+### Implementation Reference
+
+Source: `src/ui/mcp/query.go:131-239`
+
+## whatsapp_download_message_media
+
+Download media associated with a specific message and return the local file path.
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `message_id` | string | Yes | The WhatsApp message ID that contains the media |
+| `phone` | string | Yes | The target chat phone number or JID associated with the message |
+
+### Returns
+
+```json
+{
+  "file_path": "/app/storages/media/3EB0C767E8D4B2A9E4C3.jpg",
+  "media_type": "image/jpeg",
+  "file_size": 1024000
+}
+```
+
+Fallback text: `"Media saved to /app/storages/media/3EB0C767E8D4B2A9E4C3.jpg (image/jpeg)"`
+
+### Supported Media Types
+
+- **Images**: JPG, PNG, WebP
+- **Videos**: MP4, 3GP
+- **Audio**: MP3, AAC, OGG
+- **Documents**: PDF, DOCX, XLSX, etc.
+- **Stickers**: WebP
+
+### Example Usage
+
+<Tabs>
+  <Tab title="Download Image">
+    ```
+    Download media from message 3EB0C767E8D4B2A9E4C3 in chat 628123456789
+    ```
+  </Tab>
+  <Tab title="Direct MCP">
+    ```json
+    {
+      "name": "whatsapp_download_message_media",
+      "arguments": {
+        "message_id": "3EB0C767E8D4B2A9E4C3",
+        "phone": "628123456789"
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Hints
+
+- **Read-only**: `true` (downloads to local storage)
+- **Destructive**: `false`
+- **Idempotent**: `false` (may re-download each time)
+
+### File Storage
+
+Downloaded media is saved to:
+```
+/app/storages/media/<message_id>.<extension>
+```
+
+<Note>
+Media files are stored locally on the MCP server. If using Docker, ensure the `/app/storages` volume is mounted to persist media files.
+</Note>
+
+### Implementation Reference
+
+Source: `src/ui/mcp/query.go:241-290`
+
+## whatsapp_archive_chat
+
+Archive or unarchive a WhatsApp chat. Archived chats are hidden from the main chat list.
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `chat_jid` | string | Yes | The chat JID (e.g., `628123456789@s.whatsapp.net` or `120363123456@g.us`) |
+| `archived` | boolean | Yes | Set to `true` to archive the chat, `false` to unarchive it |
+
+### Returns
+
+```json
+{
+  "message": "Chat archived successfully"
+}
+```
+
+Fallback text: `"Chat archived successfully"`
+
+### Example Usage
+
+<Tabs>
+  <Tab title="Archive Chat">
+    ```
+    Archive chat 628123456789@s.whatsapp.net
+    ```
+  </Tab>
+  <Tab title="Unarchive Chat">
+    ```
+    Unarchive chat 628123456789@s.whatsapp.net
+    ```
+  </Tab>
+</Tabs>
+
+### Hints
+
+- **Read-only**: `false`
+- **Destructive**: `false`
+- **Idempotent**: `true`
+
+### Implementation Reference
+
+Source: `src/ui/mcp/query.go:311-368`
+
+## Helper Functions
+
+### Boolean Parsing
+
+The MCP query handler includes a robust boolean parser (`toBool`) that handles:
+
+```go
+func toBool(value any) (bool, error) {
+    switch v := value.(type) {
+    case bool:        return v, nil
+    case string:      return strconv.ParseBool(v)
+    case float64:     return v != 0, nil
+    case int:         return v != 0, nil
+    default:          return false, fmt.Errorf("unsupported type")
+    }
+}
+```
+
+Source: `src/ui/mcp/query.go:292-309`
+
+This allows flexible boolean inputs:
+- `true` / `false` (boolean)
+- `"true"` / `"false"` (string)
+- `1` / `0` (number)
+
+## Best Practices
+
+1. **Use pagination**: For large chat lists, use `limit` and `offset` to avoid memory issues
+2. **Filter by time**: Use `start_time` and `end_time` to limit message queries to relevant time ranges
+3. **Search before fetching**: Use `search` parameter to narrow results before retrieving full messages
+4. **Download media selectively**: Only download media when needed (files can be large)
+5. **Cache contact lists**: Contact lists change infrequently; cache results to reduce API calls
+
+## Error Handling
+
+### Common Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `chat_jid is required` | Missing chat_jid parameter | Provide valid chat JID |
+| `invalid time format` | Malformed timestamp | Use RFC3339 format: `2026-03-04T10:30:00Z` |
+| `message not found` | Invalid message_id | Verify message ID exists in chat |
+| `media not available` | Message has no media | Check `has_media` before downloading |
+| `device identification required` | No device authenticated | Login first |
+
+## Performance Considerations
+
+### Large Chat Histories
+
+For chats with thousands of messages:
+- Use `limit: 100` (maximum) per query
+- Implement pagination with `offset`
+- Filter by `start_time` / `end_time` to reduce dataset
+
+### Media Downloads
+
+Downloading large media files:
+- Can be slow depending on network speed
+- May consume significant storage
+- Consider downloading in batches
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Group Management" icon="users" href="/mcp/tools/groups">
+    Create and manage WhatsApp groups
+  </Card>
+  <Card title="Messaging Tools" icon="message" href="/mcp/tools/messaging">
+    Send messages, images, and more
+  </Card>
+</CardGroup>

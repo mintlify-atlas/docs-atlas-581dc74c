@@ -1,0 +1,358 @@
+---
+title: 'Multi-device support'
+description: 'Managing multiple WhatsApp accounts simultaneously in a single GOWA server instance'
+---
+
+GOWA v8 introduced full multi-device support, allowing you to connect and manage multiple WhatsApp accounts within a single server instance. Each account operates independently with its own sessions, webhooks, and configuration.
+
+## What is multi-device?
+
+**Multi-device** in GOWA refers to managing multiple **WhatsApp accounts** (different phone numbers), not WhatsApp's own multi-device feature (which allows linking phones, tablets, and desktops to a single account).
+
+<CardGroup cols={2}>
+  <Card title="Single-device mode" icon="mobile">
+    - One WhatsApp account per server
+    - Simplified API (no device scoping required)
+    - Default behavior for one registered device
+  </Card>
+  <Card title="Multi-device mode" icon="users">
+    - Multiple WhatsApp accounts per server
+    - Device scoping required (`X-Device-Id` header)
+    - Ideal for agencies, multi-tenant systems
+  </Card>
+</CardGroup>
+
+## Device scoping
+
+All API requests in multi-device mode must specify which device to use.
+
+### X-Device-Id header (recommended)
+
+```bash cURL
+curl -X POST http://localhost:3000/send/message \
+  -H "X-Device-Id: business-account" \
+  -H "Content-Type: application/json" \
+  -d '{"phone": "628123@s.whatsapp.net", "message": "Hello"}'
+```
+
+### device_id query parameter
+
+```bash
+curl -X POST "http://localhost:3000/send/message?device_id=business-account" \
+  -H "Content-Type: application/json" \
+  -d '{"phone": "628123@s.whatsapp.net", "message": "Hello"}'
+```
+
+<Note>
+If only **one device** is registered, device scoping is optional and the single device is used automatically.
+</Note>
+
+## Setting up multiple devices
+
+<Steps>
+  <Step title="Create first device">
+    ```bash
+    curl -X POST http://localhost:3000/devices \
+      -H "Content-Type: application/json" \
+      -d '{"device_id": "sales-team"}'
+    ```
+  </Step>
+
+  <Step title="Login first device">
+    ```bash
+    curl http://localhost:3000/devices/sales-team/login
+    ```
+    
+    Scan QR code with Sales team WhatsApp account.
+  </Step>
+
+  <Step title="Create second device">
+    ```bash
+    curl -X POST http://localhost:3000/devices \
+      -H "Content-Type: application/json" \
+      -d '{"device_id": "support-team"}'
+    ```
+  </Step>
+
+  <Step title="Login second device">
+    ```bash
+    curl http://localhost:3000/devices/support-team/login
+    ```
+    
+    Scan QR code with Support team WhatsApp account.
+  </Step>
+
+  <Step title="Use both devices">
+    ```bash
+    # Send from Sales
+    curl -X POST http://localhost:3000/send/message \
+      -H "X-Device-Id: sales-team" \
+      -d '{"phone": "628111@s.whatsapp.net", "message": "Sales inquiry"}'
+    
+    # Send from Support
+    curl -X POST http://localhost:3000/send/message \
+      -H "X-Device-Id: support-team" \
+      -d '{"phone": "628222@s.whatsapp.net", "message": "Support ticket"}'
+    ```
+  </Step>
+</Steps>
+
+## Device isolation
+
+Each device maintains completely isolated:
+
+### Sessions
+```
+storages/
+├── 628111111111@s.whatsapp.net/  # Sales team JID
+│   ├── session.db
+│   └── media/
+└── 628222222222@s.whatsapp.net/  # Support team JID
+    ├── session.db
+    └── media/
+```
+
+### Database records
+
+All chat and message records include `device_id` for isolation:
+
+```sql
+SELECT * FROM messages 
+WHERE device_id = '628111111111@s.whatsapp.net';
+```
+
+<Warning>
+**Always scope database queries by device_id** to prevent data leaks between accounts.
+</Warning>
+
+### Webhooks
+
+Webhook payloads include top-level `device_id` field:
+
+```json
+{
+  "event": "message",
+  "device_id": "628111111111@s.whatsapp.net",
+  "payload": {
+    "from": "628123456789@s.whatsapp.net",
+    "message": "Hello"
+  }
+}
+```
+
+Your webhook handler can route events by device:
+
+```javascript
+app.post('/webhook', (req, res) => {
+  const { device_id, event, payload } = req.body;
+  
+  if (device_id === '628111111111@s.whatsapp.net') {
+    // Handle Sales team events
+  } else if (device_id === '628222222222@s.whatsapp.net') {
+    // Handle Support team events
+  }
+  
+  res.sendStatus(200);
+});
+```
+
+## Managing devices
+
+### List all devices
+
+```bash
+curl http://localhost:3000/devices
+```
+
+Response:
+```json
+{
+  "code": 200,
+  "data": [
+    {
+      "device_id": "sales-team",
+      "phone": "628111111111",
+      "name": "Sales WhatsApp",
+      "state": "connected",
+      "jid": "628111111111@s.whatsapp.net"
+    },
+    {
+      "device_id": "support-team",
+      "phone": "628222222222",
+      "name": "Support WhatsApp",
+      "state": "connected",
+      "jid": "628222222222@s.whatsapp.net"
+    }
+  ]
+}
+```
+
+### Check device status
+
+```bash
+curl http://localhost:3000/devices/sales-team/status
+```
+
+### Remove device
+
+```bash
+# 1. Logout from WhatsApp
+curl -X POST http://localhost:3000/devices/sales-team/logout
+
+# 2. Remove from server
+curl -X DELETE http://localhost:3000/devices/sales-team
+```
+
+## WebSocket device scoping
+
+Connect WebSocket with device_id query parameter:
+
+```javascript
+const ws = new WebSocket('ws://localhost:3000/ws?device_id=sales-team');
+
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+  console.log('Sales team message:', message);
+};
+```
+
+## Use cases
+
+<AccordionGroup>
+  <Accordion title="Multi-tenant SaaS">
+    Each customer gets their own WhatsApp device:
+    
+    ```javascript
+    // Customer signup flow
+    async function createCustomerWhatsApp(customerId, phone) {
+      // Create device with customer ID
+      await fetch('http://localhost:3000/devices', {
+        method: 'POST',
+        body: JSON.stringify({ device_id: `customer-${customerId}` })
+      });
+      
+      // Generate pairing code
+      const { code } = await fetch(`http://localhost:3000/devices/customer-${customerId}/login/code`, {
+        method: 'POST',
+        body: JSON.stringify({ phone })
+      }).then(r => r.json());
+      
+      return code; // Show to customer
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Agency with multiple clients">
+    Each client gets dedicated WhatsApp account:
+    
+    ```bash
+    # Client A - E-commerce store
+    device_id: client-a-ecommerce
+    
+    # Client B - Restaurant
+    device_id: client-b-restaurant
+    
+    # Client C - Consultancy
+    device_id: client-c-consulting
+    ```
+  </Accordion>
+
+  <Accordion title="Departmental separation">
+    Different departments use different accounts:
+    
+    - `sales` - Sales team
+    - `support` - Customer support
+    - `marketing` - Marketing campaigns
+    - `hr` - HR recruitment
+  </Accordion>
+
+  <Accordion title="Geographic regions">
+    Different numbers for different regions:
+    
+    - `us-east` - US East Coast
+    - `us-west` - US West Coast
+    - `eu` - Europe
+    - `apac` - Asia Pacific
+  </Accordion>
+</AccordionGroup>
+
+## Error handling
+
+### Missing device_id
+
+With multiple devices registered:
+
+```json
+{
+  "code": 400,
+  "message": "DEVICE_ID_REQUIRED: Multiple devices registered, X-Device-Id header or device_id query parameter required"
+}
+```
+
+**Solution**: Add `X-Device-Id` header or `device_id` query param.
+
+### Device not found
+
+```json
+{
+  "code": 404,
+  "message": "DEVICE_NOT_FOUND: Device 'invalid-id' not found"
+}
+```
+
+**Solution**: List devices with `GET /devices` to verify device_id.
+
+### Device not connected
+
+```json
+{
+  "code": 400,
+  "message": "Device not connected. Please login first."
+}
+```
+
+**Solution**: Check status with `GET /devices/{device_id}/status` and login if needed.
+
+## Best practices
+
+<CardGroup cols={2}>
+  <Card title="Descriptive IDs" icon="tag">
+    Use meaningful device IDs: `customer-123`, `sales-team`, not `device1`, `dev2`
+  </Card>
+  <Card title="Monitor connections" icon="chart-line">
+    Regularly check device status and reconnect disconnected devices
+  </Card>
+  <Card title="Database queries" icon="database">
+    Always include `device_id` in WHERE clauses to prevent data leaks
+  </Card>
+  <Card title="Webhook routing" icon="route">
+    Use `device_id` in webhook payloads to route events correctly
+  </Card>
+</CardGroup>
+
+## Limitations
+
+<Warning>
+**WhatsApp rate limits apply per account** - Multiple devices don't increase rate limits, they provide account isolation.
+</Warning>
+
+- Maximum devices: Limited by server resources (memory, CPU)
+- Each device requires ~50-100MB RAM
+- Typical server handles 10-50 devices comfortably
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Device management API" icon="code" href="/api/devices/list">
+    Complete device CRUD operations
+  </Card>
+  <Card title="Device scoping" icon="layer-group" href="/api/device-scoping">
+    Detailed device scoping reference
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/concepts/webhooks">
+    Multi-device webhook handling
+  </Card>
+  <Card title="Configuration" icon="sliders" href="/guides/configuration">
+    Environment variables and settings
+  </Card>
+</CardGroup>

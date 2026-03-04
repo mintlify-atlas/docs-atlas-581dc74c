@@ -1,0 +1,370 @@
+---
+title: 'Send File'
+openapi: 'POST /send/file'
+---
+
+Send a document file to a WhatsApp number or group. Supports various file formats with optional captions and disappearing messages.
+
+<Note>
+Files are sent as documents in WhatsApp, displayed with file name, size, and file type icon in the chat interface.
+</Note>
+
+## Endpoint
+
+```
+POST /send/file
+```
+
+## Headers
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered.
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `multipart/form-data` for file uploads.
+</ParamField>
+
+## Request Body (multipart/form-data)
+
+<ParamField body="phone" type="string" required>
+  Phone number with country code and WhatsApp suffix.
+  
+  **Format:** `{country_code}{phone_number}@s.whatsapp.net`
+  
+  **Example:** `6289685028129@s.whatsapp.net`
+</ParamField>
+
+<ParamField body="caption" type="string">
+  Optional caption text for the file. Useful for providing context or description.
+  
+  **Example:** `"Monthly report for June 2024"`
+</ParamField>
+
+<ParamField body="file" type="file" required>
+  File to upload and send. Supports a wide range of document formats.
+  
+  **Supported formats:**
+  - Documents: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, CSV
+  - Archives: ZIP, RAR, 7Z, TAR, GZ
+  - Code: JS, PY, JAVA, CPP, HTML, CSS, JSON, XML
+  - Other: RTF, ODT, ODS, ODP, EPUB
+</ParamField>
+
+<ParamField body="is_forwarded" type="boolean" default={false}>
+  Mark the message as forwarded.
+</ParamField>
+
+<ParamField body="duration" type="integer">
+  Disappearing message duration in seconds.
+  
+  **Common values:**
+  - `86400` - 24 hours
+  - `604800` - 7 days
+  - `7776000` - 90 days
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response status code. Returns `"SUCCESS"` on successful send.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message.
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="message_id" type="string">
+    Unique identifier for the sent message.
+    
+    **Example:** `"3EB0B430B6F8F1D0E053AC120E0A9E5C"`
+  </ResponseField>
+  
+  <ResponseField name="status" type="string">
+    Detailed status message.
+  </ResponseField>
+</ResponseField>
+
+## Code Examples
+
+<CodeGroup>
+
+```bash PDF Document
+curl -X POST http://localhost:3000/send/file \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "caption=Monthly Report - June 2024" \
+  -F "file=@/path/to/report.pdf"
+```
+
+```bash Excel Spreadsheet
+curl -X POST http://localhost:3000/send/file \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "caption=Sales data Q2" \
+  -F "file=@/path/to/sales-data.xlsx"
+```
+
+```bash ZIP Archive
+curl -X POST http://localhost:3000/send/file \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "caption=Project files - please review" \
+  -F "file=@/path/to/project-files.zip"
+```
+
+```bash Text File
+curl -X POST http://localhost:3000/send/file \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "caption=Configuration file" \
+  -F "file=@/path/to/config.txt"
+```
+
+```bash Disappearing Document
+curl -X POST http://localhost:3000/send/file \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "caption=Sensitive document - will be deleted in 24h" \
+  -F "file=@/path/to/confidential.pdf" \
+  -F "duration=86400"
+```
+
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": {
+    "message_id": "3EB0B430B6F8F1D0E053AC120E0A9E5C",
+    "status": "File sent successfully"
+  }
+}
+```
+
+## Supported File Types
+
+### Document Formats
+
+**Office Documents:**
+- Microsoft Word: `.doc`, `.docx`
+- Microsoft Excel: `.xls`, `.xlsx`
+- Microsoft PowerPoint: `.ppt`, `.pptx`
+- PDF: `.pdf`
+- Text: `.txt`, `.rtf`
+
+**Open Office:**
+- Writer: `.odt`
+- Calc: `.ods`
+- Impress: `.odp`
+
+### Data Formats
+- CSV: `.csv`
+- JSON: `.json`
+- XML: `.xml`
+- YAML: `.yml`, `.yaml`
+
+### Archive Formats
+- ZIP: `.zip`
+- RAR: `.rar`
+- 7-Zip: `.7z`
+- TAR: `.tar`, `.tar.gz`, `.tgz`
+- GZIP: `.gz`
+
+### Code & Development
+- Source code: `.js`, `.py`, `.java`, `.cpp`, `.c`, `.h`
+- Web: `.html`, `.css`, `.php`
+- Configuration: `.conf`, `.ini`, `.env`
+- Database: `.sql`, `.db`
+
+### Other Formats
+- eBooks: `.epub`, `.mobi`
+- Fonts: `.ttf`, `.otf`
+- Vector: `.svg`
+- Any other file type (as generic document)
+
+## File Size Limits
+
+<Warning>
+WhatsApp enforces file size limits for document messages.
+</Warning>
+
+- **Maximum file size:** 100MB
+- **Recommended:** Under 20MB for reliable delivery
+- **Large files:** May take longer to upload and download
+- **Network dependent:** Delivery time varies by connection speed
+
+## Use Cases
+
+### Business Documents
+
+Send invoices, contracts, and reports:
+
+```bash
+curl -X POST http://localhost:3000/send/file \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "caption=Invoice #12345 - Payment Due June 30" \
+  -F "file=@invoices/invoice-12345.pdf"
+```
+
+### Educational Materials
+
+Share study materials, assignments, and resources:
+
+```bash
+curl -X POST http://localhost:3000/send/file \
+  -H "X-Device-Id: my-device" \
+  -F "phone=120363025982934543@g.us" \
+  -F "caption=Chapter 5 - Introduction to Programming" \
+  -F "file=@courses/chapter5.pdf"
+```
+
+### Technical Documentation
+
+Distribute API documentation, guides, and manuals:
+
+```bash
+curl -X POST http://localhost:3000/send/file \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "caption=API Documentation v2.0" \
+  -F "file=@docs/api-docs-v2.pdf"
+```
+
+### File Sharing & Collaboration
+
+Share project files and collaboration documents:
+
+```bash
+curl -X POST http://localhost:3000/send/file \
+  -H "X-Device-Id: my-device" \
+  -F "phone=120363025982934543@g.us" \
+  -F "caption=Design mockups - please review and provide feedback" \
+  -F "file=@designs/mockups-v3.zip"
+```
+
+### Data Export & Backup
+
+Send database exports, backups, and data dumps:
+
+```bash
+curl -X POST http://localhost:3000/send/file \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "caption=Database backup - 2024-06-15" \
+  -F "file=@backups/db-backup-20240615.sql.gz"
+```
+
+## Best Practices
+
+1. **File Naming**
+   - Use descriptive, meaningful file names
+   - Include version numbers or dates
+   - Avoid special characters and spaces
+   - Example: `report-june-2024-v2.pdf`
+
+2. **Captions**
+   - Always provide context with captions
+   - Include version information
+   - Mention important details or deadlines
+   - Keep captions concise but informative
+
+3. **File Size Optimization**
+   - Compress large files before sending
+   - Use ZIP for multiple files
+   - Optimize PDFs (remove unnecessary elements)
+   - Consider splitting very large files
+
+4. **Security & Privacy**
+   - Use disappearing messages for sensitive documents
+   - Encrypt sensitive files before sending
+   - Verify recipient before sending confidential data
+   - Consider using password-protected archives
+
+5. **Delivery Confirmation**
+   - Store message_id for tracking
+   - Implement delivery receipt handling via webhooks
+   - Follow up with recipient to confirm receipt
+   - Have fallback delivery methods for critical documents
+
+6. **File Format Selection**
+   - Use PDF for documents that shouldn't be edited
+   - Use DOCX/XLSX for collaborative editing
+   - Use ZIP for multiple related files
+   - Use TXT for simple text that should be easily readable
+
+## File Metadata
+
+WhatsApp displays the following metadata for documents:
+
+- **File Name:** Preserved from original file
+- **File Size:** Displayed in KB/MB
+- **File Type:** Icon based on extension
+- **Page Count:** For PDF documents (if available)
+- **Duration:** For audio/video files sent as documents
+
+## Limitations
+
+<Warning>
+Be aware of these limitations when sending files.
+</Warning>
+
+1. **No File Preview:** Unlike images/videos, documents don't show inline preview
+2. **Download Required:** Recipients must download to view content
+3. **Size Restrictions:** 100MB hard limit
+4. **No Streaming:** Files must be fully downloaded before viewing
+5. **Format Support:** Some file types may not open on all devices
+
+## Error Responses
+
+<ResponseField name="400" type="Bad Request">
+  Common causes:
+  - Invalid phone number format
+  - Missing file parameter
+  - File size exceeds 100MB
+  - Invalid file format (corrupted file)
+</ResponseField>
+
+<ResponseField name="500" type="Internal Server Error">
+  Common causes:
+  - Device not connected
+  - File upload interrupted
+  - Insufficient server storage
+  - Network timeout during upload
+  - File processing error
+</ResponseField>
+
+## Troubleshooting
+
+### File Upload Fails
+1. Check file size (must be under 100MB)
+2. Verify file is not corrupted
+3. Check device connection status
+4. Ensure sufficient server disk space
+5. Try with a smaller file first
+
+### Long Upload Time
+1. Large files take time - be patient
+2. Check network connection speed
+3. Consider compressing the file
+4. Split large archives into smaller parts
+5. Use a faster network connection
+
+### Recipient Can't Open File
+1. Verify recipient has compatible app
+2. Check file format is supported on their device
+3. Ensure file is not corrupted
+4. Try re-sending the file
+5. Convert to more common format (e.g., PDF)
+
+## Related Endpoints
+
+- [Send Image](/api/send/image) - Send image messages
+- [Send Video](/api/send/video) - Send video messages
+- [Send Audio](/api/send/audio) - Send audio messages
+- [Download Media](/api/message/download) - Download files from messages

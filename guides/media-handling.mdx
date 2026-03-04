@@ -1,0 +1,488 @@
+---
+title: 'Media Handling'
+description: 'Send and receive images, videos, audio, stickers, and files with compression and conversion'
+icon: 'photo-film'
+---
+
+## Overview
+
+GOWA WhatsApp API supports sending and receiving various media types with automatic format conversion, compression, and optimization. All media operations require FFmpeg for video/audio processing and libwebp for sticker conversion.
+
+## Requirements
+
+<CardGroup cols={2}>
+  <Card title="FFmpeg" icon="video">
+    Required for video compression and audio processing.
+    
+    **Install:**
+    - macOS: `brew install ffmpeg`
+    - Ubuntu: `sudo apt install ffmpeg`
+    - Windows: [Download FFmpeg](https://www.ffmpeg.org/download.html)
+  </Card>
+  
+  <Card title="libwebp" icon="image">
+    Required for sticker conversion (WebP format).
+    
+    **Install:**
+    - macOS: `brew install webp`
+    - Ubuntu: `sudo apt install webp`
+    - Windows: [Download libwebp](https://developers.google.com/speed/webp/download)
+  </Card>
+</CardGroup>
+
+## Images
+
+### Send Image
+
+Send images from file upload or URL:
+
+<Tabs>
+  <Tab title="File Upload">
+    ```bash
+    curl -X POST http://localhost:3000/send/image \
+      -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+      -F "phone=6289685028129@s.whatsapp.net" \
+      -F "caption=Check this out!" \
+      -F "image=@/path/to/photo.jpg" \
+      -F "compress=true"
+    ```
+  </Tab>
+  
+  <Tab title="Image URL">
+    ```bash
+    curl -X POST http://localhost:3000/send/image \
+      -H "Content-Type: application/json" \
+      -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+      -d '{
+        "phone": "6289685028129@s.whatsapp.net",
+        "caption": "Check this out!",
+        "image_url": "https://example.com/photo.jpg",
+        "compress": true
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+### Image Parameters
+
+<ParamField path="phone" type="string" required>
+  Recipient phone number in international format.
+</ParamField>
+
+<ParamField path="image" type="file">
+  Image file (JPG, JPEG, PNG). Mutually exclusive with `image_url`.
+</ParamField>
+
+<ParamField path="image_url" type="string">
+  Image URL to download and send. Mutually exclusive with `image`.
+</ParamField>
+
+<ParamField path="caption" type="string">
+  Image caption text.
+</ParamField>
+
+<ParamField path="compress" type="boolean" default="false">
+  Compress image before sending (reduces file size).
+</ParamField>
+
+<ParamField path="view_once" type="boolean" default="false">
+  Send as view-once image (disappears after viewing).
+</ParamField>
+
+<ParamField path="duration" type="integer">
+  Disappearing message duration in seconds (0, 86400, 604800, 7776000).
+</ParamField>
+
+### Image Compression
+
+When `compress=true`, the API uses FFmpeg to optimize images:
+
+```bash
+ffmpeg -i input.jpg -q:v 3 -preset ultrafast output.jpg
+```
+
+<Info>
+  Compression typically reduces image size by 40-70% while maintaining visual quality.
+</Info>
+
+### Supported Formats
+
+| Format | Extension | MIME Type | Compression |
+|--------|-----------|-----------|-------------|
+| JPEG | `.jpg`, `.jpeg` | `image/jpeg` | ✅ |
+| PNG | `.png` | `image/png` | ✅ |
+| WebP | `.webp` | `image/webp` | ❌ |
+
+## Videos
+
+### Send Video
+
+```bash
+curl -X POST http://localhost:3000/send/video \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "caption=Watch this" \
+  -F "video=@/path/to/video.mp4" \
+  -F "compress=true"
+```
+
+### Video Parameters
+
+<ParamField path="video" type="file">
+  Video file (MP4, MKV, AVI). Max size: 30MB (default).
+</ParamField>
+
+<ParamField path="video_url" type="string">
+  Video URL to download and send.
+</ParamField>
+
+<ParamField path="compress" type="boolean" default="false">
+  Compress video using FFmpeg before sending.
+</ParamField>
+
+<ParamField path="view_once" type="boolean" default="false">
+  Send as view-once video.
+</ParamField>
+
+### Video Compression
+
+FFmpeg compression command used:
+
+```bash
+ffmpeg -i input.mp4 -c:v libx264 -preset ultrafast -crf 28 \
+  -c:a aac -b:a 128k output.mp4
+```
+
+<Warning>
+  Video compression is CPU-intensive. Consider disabling for large files or use a dedicated media processing server.
+</Warning>
+
+### Supported Video Formats
+
+| Format | Extension | MIME Type |
+|--------|-----------|------------|
+| MP4 | `.mp4` | `video/mp4` |
+| Matroska | `.mkv` | `video/x-matroska` |
+| AVI | `.avi` | `video/avi`, `video/x-msvideo` |
+
+## Audio
+
+### Send Audio
+
+```bash
+curl -X POST http://localhost:3000/send/audio \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "audio=@/path/to/audio.mp3"
+```
+
+### Supported Audio Formats
+
+<Accordion title="View All Supported Formats">
+  - AAC (`.aac`, `audio/aac`)
+  - AMR (`.amr`, `audio/amr`)
+  - FLAC (`.flac`, `audio/flac`)
+  - M4A (`.m4a`, `audio/m4a`)
+  - M4R (`.m4r`, `audio/m4r`)
+  - MP3 (`.mp3`, `audio/mp3`, `audio/mpeg`)
+  - OGG (`.ogg`, `audio/ogg`)
+  - WAV (`.wav`, `audio/wav`, `audio/wave`, `audio/x-wav`)
+  - WMA (`.wma`, `audio/wma`, `audio/x-ms-wma`)
+</Accordion>
+
+### Voice Messages (PTT)
+
+<Note>
+  PTT (Push-to-Talk) voice messages are not yet implemented in the current API version. Regular audio files are sent as audio attachments.
+</Note>
+
+## Stickers
+
+### Send Sticker
+
+Stickers are automatically converted to WebP format with 512x512 pixel dimensions:
+
+```bash
+curl -X POST http://localhost:3000/send/sticker \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "sticker=@/path/to/image.png"
+```
+
+### Sticker Conversion
+
+<Steps>
+  <Step title="Format Detection">
+    API accepts JPG, JPEG, PNG, WebP, and GIF formats.
+  </Step>
+  
+  <Step title="Automatic Resize">
+    Static images are resized to 512x512 pixels using `imaging` library.
+  </Step>
+  
+  <Step title="WebP Conversion">
+    Images are converted to WebP format for WhatsApp compatibility.
+  </Step>
+  
+  <Step title="Transparency Preservation">
+    PNG transparency is preserved in the WebP output.
+  </Step>
+</Steps>
+
+### Animated Stickers
+
+Animated WebP stickers are supported but **must** meet WhatsApp requirements:
+
+<Warning>
+  **Animated Sticker Requirements:**
+  - Dimensions: Exactly **512x512 pixels**
+  - File size: Under **500KB**
+  - Duration: Maximum **10 seconds**
+  
+  If your animated sticker doesn't meet these requirements, resize it before uploading using tools like [ezgif.com](https://ezgif.com/resize).
+</Warning>
+
+### Sticker Validation
+
+The API automatically validates animated stickers:
+
+```go
+// Pseudo-code validation
+if isAnimatedWebP {
+  if width != 512 || height != 512 {
+    return error("animated stickers must be 512x512")
+  }
+  if fileSize > 500KB {
+    return error("animated stickers must be under 500KB")
+  }
+}
+```
+
+### Supported Input Formats
+
+| Format | Static | Animated | Auto-Resize |
+|--------|--------|----------|-------------|
+| JPG/JPEG | ✅ | ❌ | ✅ |
+| PNG | ✅ | ❌ | ✅ |
+| WebP | ✅ | ✅* | ❌ |
+| GIF | ✅ | ✅* | ✅ |
+
+*Animated formats must meet size/dimension requirements.
+
+## Documents/Files
+
+### Send File
+
+Send any document type:
+
+```bash
+curl -X POST http://localhost:3000/send/file \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "caption=Monthly report" \
+  -F "file=@/path/to/document.pdf"
+```
+
+### File Size Limits
+
+<ParamField path="WhatsappSettingMaxFileSize" type="integer" default="10485760">
+  Maximum file upload size: **10MB** (10,485,760 bytes).
+</ParamField>
+
+<Info>
+  For files larger than 10MB, upload to cloud storage and send the link as a text message.
+</Info>
+
+### All File Types Supported
+
+WhatsApp accepts any file type including:
+- Documents (PDF, DOCX, XLSX, PPTX)
+- Archives (ZIP, RAR, 7Z)
+- Code files (JS, PY, GO)
+- Data files (JSON, CSV, XML)
+
+## Receiving Media
+
+### Auto-Download Media
+
+Control automatic media downloads:
+
+```bash
+export WHATSAPP_AUTO_DOWNLOAD_MEDIA=true  # Default
+```
+
+<Tabs>
+  <Tab title="Enabled (Default)">
+    Media files are automatically downloaded to `statics/media/`:
+    
+    ```json
+    {
+      "event": "message",
+      "payload": {
+        "id": "3EB0C127D7BACC83D6A3",
+        "image": "statics/media/1752404751-ad9e37ac-c658-4fe5-8d25-ba4a3f4d58fd.jpeg"
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Disabled">
+    Media URLs are provided instead:
+    
+    ```json
+    {
+      "event": "message",
+      "payload": {
+        "id": "3EB0C127D7BACC83D6A3",
+        "image": {
+          "url": "https://mmg.whatsapp.net/...",
+          "caption": "Check this out!"
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Manual Media Download
+
+Download media from a specific message:
+
+```bash
+curl -X GET "http://localhost:3000/message/3EB0C127D7BACC83D6A3/download" \
+  -H "X-Device-Id: 628123456789@s.whatsapp.net" \
+  -o downloaded_media.jpg
+```
+
+## Media Storage Management
+
+<Warning>
+  **Disk Space:** Downloaded media files accumulate in `statics/media/`. Implement cleanup jobs to manage disk space.
+</Warning>
+
+### Cleanup Strategy
+
+```bash
+# Delete media files older than 7 days
+find statics/media -type f -mtime +7 -delete
+```
+
+Or use a cron job:
+
+```cron
+# Clean up media daily at 2 AM
+0 2 * * * find /app/statics/media -type f -mtime +7 -delete
+```
+
+## Configuration Reference
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `WHATSAPP_AUTO_DOWNLOAD_MEDIA` | `true` | Auto-download incoming media |
+| `WhatsappSettingMaxImageSize` | 5MB | Max image download size |
+| `WhatsappSettingMaxVideoSize` | 30MB | Max video upload size |
+| `WhatsappSettingMaxFileSize` | 10MB | Max file upload size |
+| `WhatsappSettingMaxDownloadSize` | 100MB | Max media download size |
+
+## Error Handling
+
+<AccordionGroup>
+  <Accordion title="File Too Large">
+    ```json
+    {
+      "status": 400,
+      "code": "VALIDATION_ERROR",
+      "message": "max file upload is 10 MB, please upload in cloud and send via text"
+    }
+    ```
+    
+    **Solution:** Upload large files to cloud storage (S3, Google Drive) and send the link.
+  </Accordion>
+  
+  <Accordion title="Invalid Sticker Dimensions">
+    ```json
+    {
+      "status": 400,
+      "code": "VALIDATION_ERROR",
+      "message": "animated WebP stickers must be exactly 512x512 pixels (got 480x480)"
+    }
+    ```
+    
+    **Solution:** Resize animated stickers to 512x512 before uploading using [ezgif.com](https://ezgif.com/resize).
+  </Accordion>
+  
+  <Accordion title="FFmpeg Not Found">
+    ```json
+    {
+      "status": 500,
+      "code": "INTERNAL_SERVER_ERROR",
+      "message": "ffmpeg not found in system PATH"
+    }
+    ```
+    
+    **Solution:** Install FFmpeg and ensure it's in system PATH.
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Compress Large Media" icon="compress">
+    Always enable compression for images/videos over 2MB to reduce bandwidth.
+  </Card>
+  
+  <Card title="Validate Before Upload" icon="check">
+    Pre-validate file sizes and formats client-side before API calls.
+  </Card>
+  
+  <Card title="Use Cloud Storage" icon="cloud">
+    For files >10MB, upload to S3/GCS and send links instead.
+  </Card>
+  
+  <Card title="Clean Up Media" icon="broom">
+    Implement automated cleanup of downloaded media files.
+  </Card>
+</CardGroup>
+
+## Complete Example
+
+```javascript
+const FormData = require('form-data');
+const fs = require('fs');
+const axios = require('axios');
+
+async function sendMediaMessage(type, filePath, recipient) {
+  const form = new FormData();
+  form.append('phone', recipient);
+  form.append('caption', 'Sent via API');
+  form.append(type, fs.createReadStream(filePath));
+  
+  if (type === 'image' || type === 'video') {
+    form.append('compress', 'true');
+  }
+
+  const response = await axios.post(
+    `http://localhost:3000/send/${type}`,
+    form,
+    {
+      headers: {
+        ...form.getHeaders(),
+        'X-Device-Id': '628123456789@s.whatsapp.net'
+      }
+    }
+  );
+  
+  return response.data;
+}
+
+// Usage
+await sendMediaMessage('image', 'photo.jpg', '6289685028129@s.whatsapp.net');
+await sendMediaMessage('video', 'clip.mp4', '6289685028129@s.whatsapp.net');
+await sendMediaMessage('sticker', 'sticker.png', '6289685028129@s.whatsapp.net');
+```
+
+## See Also
+
+- [Sending Messages](/guides/sending-messages) — Send text messages with mentions and replies
+- [Receiving Messages](/guides/receiving-messages) — Handle incoming media via webhooks
+- [Configuration](/guides/configuration) — Environment variables and settings

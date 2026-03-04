@@ -1,0 +1,170 @@
+---
+title: 'Get Privacy Settings'
+api: 'GET /user/my/privacy'
+description: 'Retrieve the current privacy settings for the authenticated WhatsApp account'
+---
+
+Get detailed information about your WhatsApp privacy settings including who can see your last seen, status, profile picture, and who can add you to groups.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Basic authentication credentials (username:password in base64)
+</ParamField>
+
+## Headers
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code indicating success or failure
+  
+  **Example:** `SUCCESS`
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message
+  
+  **Example:** `Success get privacy`
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  Privacy settings data
+  
+  <ResponseField name="group_add" type="string">
+    Who can add you to groups
+    
+    **Possible values:** `all`, `contacts`, `contact_blacklist`, `none`
+    
+    **Example:** `all`
+  </ResponseField>
+  
+  <ResponseField name="last_seen" type="string">
+    Who can see your last seen timestamp
+    
+    **Possible values:** `all`, `contacts`, `contact_blacklist`, `none`, `null`
+    
+    **Example:** `null`
+  </ResponseField>
+  
+  <ResponseField name="status" type="string">
+    Who can see your status updates
+    
+    **Possible values:** `all`, `contacts`, `contact_blacklist`, `none`
+    
+    **Example:** `all`
+  </ResponseField>
+  
+  <ResponseField name="profile" type="string">
+    Who can see your profile picture
+    
+    **Possible values:** `all`, `contacts`, `contact_blacklist`, `none`
+    
+    **Example:** `all`
+  </ResponseField>
+  
+  <ResponseField name="read_receipts" type="string">
+    Who can see your read receipts (blue ticks)
+    
+    **Possible values:** `all`, `none`
+    
+    **Example:** `all`
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET 'http://localhost:3000/user/my/privacy' \
+  -u 'username:password' \
+  -H 'X-Device-Id: my-device-id'
+```
+
+```javascript JavaScript
+const response = await fetch('http://localhost:3000/user/my/privacy', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Basic ' + btoa('username:password'),
+    'X-Device-Id': 'my-device-id'
+  }
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+import base64
+
+username = 'username'
+password = 'password'
+credentials = base64.b64encode(f'{username}:{password}'.encode()).decode()
+
+response = requests.get(
+    'http://localhost:3000/user/my/privacy',
+    headers={
+        'Authorization': f'Basic {credentials}',
+        'X-Device-Id': 'my-device-id'
+    }
+)
+
+print(response.json())
+```
+
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Success get privacy",
+  "results": {
+    "group_add": "all",
+    "last_seen": "null",
+    "status": "all",
+    "profile": "all",
+    "read_receipts": "all"
+  }
+}
+```
+
+## Error Responses
+
+<ResponseField name="500" type="object">
+  Internal Server Error
+  
+  ```json
+  {
+    "code": "INTERNAL_SERVER_ERROR",
+    "message": "Failed to fetch privacy settings",
+    "results": null
+  }
+  ```
+</ResponseField>
+
+## Privacy Setting Values
+
+| Value | Description |
+|-------|-------------|
+| `all` | Everyone can see/do this |
+| `contacts` | Only your contacts can see/do this |
+| `contact_blacklist` | Your contacts except those you've blocked |
+| `none` | Nobody can see/do this |
+| `null` | Setting is not configured or hidden |
+
+## Usage Notes
+
+- This endpoint is read-only; privacy settings cannot be changed via the API
+- To change privacy settings, use the WhatsApp mobile app
+- `null` values typically indicate the setting is either not configured or hidden for privacy
+- The `read_receipts` setting typically only has `all` or `none` values
+- Privacy settings affect both individual chats and group interactions
+- Some settings may be restricted by business accounts or enterprise policies

@@ -1,122 +1,201 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "GOWA - Go WhatsApp Web Multi-Device API",
+  "theme": "sequoia",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#94cb04",
+    "light": "#545454",
+    "dark": "#94cb04"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "https://media.brand.dev/288cc7c4-5cef-4376-950b-bdf0083eedae.png",
+  "logo": {
+    "light": "https://media.brand.dev/288cc7c4-5cef-4376-950b-bdf0083eedae.png",
+    "dark": "https://media.brand.dev/288cc7c4-5cef-4376-950b-bdf0083eedae.png"
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/aldinokemal/go-whatsapp-web-multidevice"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/aldinokemal/go-whatsapp-web-multidevice"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
+              "introduction",
               "quickstart",
-              "development"
+              "installation"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Concepts",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "concepts/device-management",
+              "concepts/authentication",
+              "concepts/multi-device",
+              "concepts/webhooks"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Guides",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "guides/sending-messages",
+              "guides/receiving-messages",
+              "guides/media-handling",
+              "guides/group-management",
+              "guides/configuration"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Integrations",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "integrations/webhooks",
+              "integrations/chatwoot",
+              "integrations/mcp",
+              "integrations/n8n"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/docker",
+              "deployment/binary",
+              "deployment/docker-compose",
+              "deployment/environment-variables"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Overview",
             "pages": [
-              "api-reference/introduction"
+              "api/overview",
+              "api/authentication",
+              "api/device-scoping",
+              "api/error-handling"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Device Management",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api/devices/list",
+              "api/devices/add",
+              "api/devices/get",
+              "api/devices/remove",
+              "api/devices/login",
+              "api/devices/logout"
+            ]
+          },
+          {
+            "group": "Connection",
+            "pages": [
+              "api/app/login",
+              "api/app/login-code",
+              "api/app/logout",
+              "api/app/status"
+            ]
+          },
+          {
+            "group": "User",
+            "pages": [
+              "api/user/info",
+              "api/user/avatar",
+              "api/user/contacts",
+              "api/user/groups",
+              "api/user/privacy"
+            ]
+          },
+          {
+            "group": "Messaging",
+            "pages": [
+              "api/send/text",
+              "api/send/image",
+              "api/send/audio",
+              "api/send/video",
+              "api/send/file",
+              "api/send/sticker",
+              "api/send/contact",
+              "api/send/link",
+              "api/send/location",
+              "api/send/poll"
+            ]
+          },
+          {
+            "group": "Message Operations",
+            "pages": [
+              "api/message/revoke",
+              "api/message/react",
+              "api/message/delete",
+              "api/message/edit",
+              "api/message/read",
+              "api/message/download"
+            ]
+          },
+          {
+            "group": "Chats",
+            "pages": [
+              "api/chat/list",
+              "api/chat/messages",
+              "api/chat/archive",
+              "api/chat/pin",
+              "api/chat/disappearing"
+            ]
+          },
+          {
+            "group": "Groups",
+            "pages": [
+              "api/group/create",
+              "api/group/info",
+              "api/group/join",
+              "api/group/leave",
+              "api/group/participants",
+              "api/group/settings",
+              "api/group/invite-link"
+            ]
+          },
+          {
+            "group": "Newsletters",
+            "pages": [
+              "api/newsletter/list",
+              "api/newsletter/unfollow"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "MCP Tools",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "mcp/introduction",
+              "mcp/setup",
+              "mcp/configuration"
+            ]
+          },
+          {
+            "group": "Available Tools",
+            "pages": [
+              "mcp/tools/connection",
+              "mcp/tools/messaging",
+              "mcp/tools/contacts",
+              "mcp/tools/groups"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

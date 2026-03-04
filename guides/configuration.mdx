@@ -1,0 +1,611 @@
+---
+title: 'Configuration'
+description: 'Environment variables, CLI flags, and .env file configuration reference'
+icon: 'gear'
+---
+
+## Overview
+
+GOWA WhatsApp API can be configured using three methods with the following priority order:
+
+<Steps>
+  <Step title="Command-Line Flags">
+    Highest priority. Overrides all other configuration sources.
+    
+    ```bash
+    ./whatsapp rest --port=8080 --debug=true
+    ```
+  </Step>
+  
+  <Step title="Environment Variables">
+    Medium priority. Overrides `.env` file.
+    
+    ```bash
+    export APP_PORT=8080
+    export APP_DEBUG=true
+    ```
+  </Step>
+  
+  <Step title=".env File">
+    Lowest priority. Default configuration file.
+    
+    ```bash
+    APP_PORT=8080
+    APP_DEBUG=true
+    ```
+  </Step>
+</Steps>
+
+## Setup
+
+### Using .env File
+
+<CodeGroup>
+```bash Copy Example File
+cd src
+cp .env.example .env
+```
+
+```bash Edit Configuration
+nano .env  # or use your preferred editor
+```
+</CodeGroup>
+
+The `.env` file should be placed in the `src/` directory alongside the binary.
+
+### Using Environment Variables
+
+Set variables in your shell or systemd service file:
+
+```bash
+export APP_PORT=3000
+export APP_DEBUG=true
+export WHATSAPP_WEBHOOK="https://yourapp.com/webhook"
+./whatsapp rest
+```
+
+### Using CLI Flags
+
+Override any setting directly:
+
+```bash
+./whatsapp rest --port=8080 --debug=true --webhook="https://yourapp.com/webhook"
+```
+
+View all available flags:
+
+```bash
+./whatsapp rest --help
+```
+
+## Application Settings
+
+### Server Configuration
+
+<ParamField path="APP_PORT" type="integer" default="3000">
+  HTTP server port.
+  
+  **CLI Flag:** `--port`
+  
+  ```bash
+  export APP_PORT=8080
+  ./whatsapp rest --port=8080
+  ```
+</ParamField>
+
+<ParamField path="APP_HOST" type="string" default="0.0.0.0">
+  Host address to bind the server. Use `0.0.0.0` for all interfaces or `127.0.0.1` for localhost only.
+  
+  **CLI Flag:** `--host`
+  
+  ```bash
+  export APP_HOST=127.0.0.1
+  ```
+</ParamField>
+
+<ParamField path="APP_DEBUG" type="boolean" default="false">
+  Enable debug logging for detailed request/response logs.
+  
+  **CLI Flag:** `--debug`
+  
+  ```bash
+  export APP_DEBUG=true
+  ./whatsapp rest --debug=true
+  ```
+</ParamField>
+
+<ParamField path="APP_OS" type="string" default="Chrome">
+  Device name displayed in WhatsApp's "Linked Devices" section.
+  
+  **CLI Flag:** `--os`
+  
+  ```bash
+  export APP_OS="MyApp Server"
+  ./whatsapp rest --os="MyApp Server"
+  ```
+</ParamField>
+
+### Authentication
+
+<ParamField path="APP_BASIC_AUTH" type="string">
+  Basic authentication credentials (comma-separated for multiple users).
+  
+  **Format:** `username:password,username2:password2`
+  
+  **CLI Flag:** `--basic-auth` or `-b`
+  
+  ```bash
+  export APP_BASIC_AUTH="admin:secret,user:password123"
+  ./whatsapp rest -b="admin:secret,user:password123"
+  ```
+</ParamField>
+
+<Warning>
+  Basic Auth transmits credentials in base64 encoding (not encrypted). Always use HTTPS in production.
+</Warning>
+
+### Deployment
+
+<ParamField path="APP_BASE_PATH" type="string">
+  Base path for subpath deployment (e.g., `/gowa`).
+  
+  **CLI Flag:** `--base-path`
+  
+  ```bash
+  export APP_BASE_PATH="/gowa"
+  # Access at: http://localhost:3000/gowa/
+  ```
+</ParamField>
+
+<ParamField path="APP_TRUSTED_PROXIES" type="string" default="">
+  Trusted proxy IP ranges for reverse proxy deployments (CIDR notation).
+  
+  ```bash
+  export APP_TRUSTED_PROXIES="0.0.0.0/0"
+  # For Cloudflare:
+  export APP_TRUSTED_PROXIES="173.245.48.0/20,103.21.244.0/22"
+  ```
+</ParamField>
+
+## Database Settings
+
+<ParamField path="DB_URI" type="string" default="file:storages/whatsapp.db?_foreign_keys=on">
+  Database connection URI. Supports SQLite (file) and PostgreSQL.
+  
+  **SQLite (default):**
+  ```bash
+  export DB_URI="file:storages/whatsapp.db?_foreign_keys=on"
+  ```
+  
+  **PostgreSQL:**
+  ```bash
+  export DB_URI="postgres://user:password@localhost:5432/whatsapp?sslmode=disable"
+  ```
+</ParamField>
+
+<ParamField path="DB_KEYS_URI" type="string" default="file::memory:?cache=shared&_foreign_keys=on">
+  Database URI for encryption keys storage (in-memory by default).
+  
+  ```bash
+  export DB_KEYS_URI="file::memory:?cache=shared&_foreign_keys=on"
+  ```
+</ParamField>
+
+## WhatsApp Settings
+
+### Auto-Reply & Auto-Read
+
+<ParamField path="WHATSAPP_AUTO_REPLY" type="string">
+  Automatically reply to all incoming messages with this text.
+  
+  **CLI Flag:** `--autoreply`
+  
+  ```bash
+  export WHATSAPP_AUTO_REPLY="Thank you for your message. We'll respond soon."
+  ./whatsapp rest --autoreply="Thank you for your message."
+  ```
+</ParamField>
+
+<ParamField path="WHATSAPP_AUTO_MARK_READ" type="boolean" default="false">
+  Automatically mark incoming messages as read.
+  
+  **CLI Flag:** `--auto-mark-read`
+  
+  ```bash
+  export WHATSAPP_AUTO_MARK_READ=true
+  ./whatsapp rest --auto-mark-read=true
+  ```
+</ParamField>
+
+<ParamField path="WHATSAPP_AUTO_DOWNLOAD_MEDIA" type="boolean" default="true">
+  Automatically download media from incoming messages to `statics/media/`.
+  
+  **CLI Flag:** `--auto-download-media`
+  
+  ```bash
+  export WHATSAPP_AUTO_DOWNLOAD_MEDIA=false
+  ```
+</ParamField>
+
+### Call Handling
+
+<ParamField path="WHATSAPP_AUTO_REJECT_CALL" type="boolean" default="false">
+  Automatically reject incoming WhatsApp calls.
+  
+  **CLI Flag:** `--auto-reject-call`
+  
+  ```bash
+  export WHATSAPP_AUTO_REJECT_CALL=true
+  ./whatsapp rest --auto-reject-call=true
+  ```
+</ParamField>
+
+<Info>
+  Call rejection events are still sent to webhooks with `auto_rejected: true` flag.
+</Info>
+
+### Presence Settings
+
+<ParamField path="WHATSAPP_PRESENCE_ON_CONNECT" type="string" default="unavailable">
+  Presence status to set when connecting to WhatsApp.
+  
+  **Options:**
+  - `available` — Mark as online (suppresses phone notifications)
+  - `unavailable` — Register pushname without going online (default, preserves phone notifications)
+  - `none` — Skip presence entirely (pushname won't be registered)
+  
+  **CLI Flag:** `--presence-on-connect`
+  
+  ```bash
+  export WHATSAPP_PRESENCE_ON_CONNECT=unavailable
+  ```
+</ParamField>
+
+### Account Validation
+
+<ParamField path="WHATSAPP_ACCOUNT_VALIDATION" type="boolean" default="true">
+  Validate recipient phone numbers are registered on WhatsApp before sending.
+  
+  ```bash
+  export WHATSAPP_ACCOUNT_VALIDATION=false
+  ```
+</ParamField>
+
+### Chat Storage
+
+<ParamField path="WHATSAPP_CHAT_STORAGE" type="boolean" default="true">
+  Enable local chat and message storage for reply functionality.
+  
+  ```bash
+  export WHATSAPP_CHAT_STORAGE=true
+  ```
+</ParamField>
+
+## Webhook Configuration
+
+<ParamField path="WHATSAPP_WEBHOOK" type="string">
+  Webhook URL(s) for receiving events (comma-separated for multiple webhooks).
+  
+  **CLI Flag:** `--webhook` or `-w`
+  
+  ```bash
+  # Single webhook
+  export WHATSAPP_WEBHOOK="https://yourapp.com/webhook"
+  
+  # Multiple webhooks
+  export WHATSAPP_WEBHOOK="https://app1.com/webhook,https://app2.com/webhook"
+  
+  ./whatsapp rest -w="https://yourapp.com/webhook"
+  ```
+</ParamField>
+
+<ParamField path="WHATSAPP_WEBHOOK_SECRET" type="string" default="secret">
+  Secret key for HMAC signature verification.
+  
+  **CLI Flag:** `--webhook-secret`
+  
+  ```bash
+  export WHATSAPP_WEBHOOK_SECRET="your-super-secret-key"
+  ```
+</ParamField>
+
+<ParamField path="WHATSAPP_WEBHOOK_EVENTS" type="string">
+  Comma-separated list of events to forward. If empty, all events are forwarded.
+  
+  **CLI Flag:** `--webhook-events`
+  
+  **Available events:** `message`, `message.reaction`, `message.revoked`, `message.edited`, `message.ack`, `message.deleted`, `group.participants`, `group.joined`, `newsletter.joined`, `newsletter.left`, `newsletter.message`, `newsletter.mute`, `call.offer`
+  
+  ```bash
+  # Only receive messages and receipts
+  export WHATSAPP_WEBHOOK_EVENTS="message,message.ack"
+  
+  # Only group events
+  export WHATSAPP_WEBHOOK_EVENTS="group.participants,group.joined"
+  ```
+</ParamField>
+
+<ParamField path="WHATSAPP_WEBHOOK_INCLUDE_OUTGOING" type="boolean" default="false">
+  Include outgoing messages (sent by you) in webhook events.
+  
+  ```bash
+  export WHATSAPP_WEBHOOK_INCLUDE_OUTGOING=false
+  ```
+</ParamField>
+
+<ParamField path="WHATSAPP_WEBHOOK_INSECURE_SKIP_VERIFY" type="boolean" default="false">
+  Skip TLS certificate verification for webhooks (insecure).
+  
+  **CLI Flag:** `--webhook-insecure-skip-verify`
+  
+  ```bash
+  export WHATSAPP_WEBHOOK_INSECURE_SKIP_VERIFY=true
+  ```
+</ParamField>
+
+<Warning>
+  Only use `WHATSAPP_WEBHOOK_INSECURE_SKIP_VERIFY=true` in development or with Cloudflare tunnels. Never in production with self-signed certificates exposed to the internet.
+</Warning>
+
+## Chatwoot Integration
+
+<ParamField path="CHATWOOT_ENABLED" type="boolean" default="false">
+  Enable Chatwoot CRM integration.
+  
+  ```bash
+  export CHATWOOT_ENABLED=true
+  ```
+</ParamField>
+
+<ParamField path="CHATWOOT_URL" type="string">
+  Chatwoot instance URL.
+  
+  ```bash
+  export CHATWOOT_URL="https://app.chatwoot.com"
+  ```
+</ParamField>
+
+<ParamField path="CHATWOOT_API_TOKEN" type="string">
+  Chatwoot API access token.
+  
+  ```bash
+  export CHATWOOT_API_TOKEN="your-api-token"
+  ```
+</ParamField>
+
+<ParamField path="CHATWOOT_ACCOUNT_ID" type="integer">
+  Chatwoot account ID.
+  
+  ```bash
+  export CHATWOOT_ACCOUNT_ID=12345
+  ```
+</ParamField>
+
+<ParamField path="CHATWOOT_INBOX_ID" type="integer">
+  Chatwoot inbox ID for WhatsApp channel.
+  
+  ```bash
+  export CHATWOOT_INBOX_ID=67890
+  ```
+</ParamField>
+
+<ParamField path="CHATWOOT_DEVICE_ID" type="string">
+  WhatsApp device ID for multi-device Chatwoot setup.
+  
+  ```bash
+  export CHATWOOT_DEVICE_ID="628123456789@s.whatsapp.net"
+  ```
+</ParamField>
+
+<ParamField path="CHATWOOT_IMPORT_MESSAGES" type="boolean" default="false">
+  Enable message history sync to Chatwoot.
+  
+  ```bash
+  export CHATWOOT_IMPORT_MESSAGES=true
+  ```
+</ParamField>
+
+<ParamField path="CHATWOOT_DAYS_LIMIT_IMPORT_MESSAGES" type="integer" default="3">
+  Number of days of message history to import.
+  
+  ```bash
+  export CHATWOOT_DAYS_LIMIT_IMPORT_MESSAGES=7
+  ```
+</ParamField>
+
+<Info>
+  For complete Chatwoot integration guide, see [Chatwoot Integration Documentation](https://github.com/aldinokemal/go-whatsapp-web-multidevice/blob/main/docs/chatwoot.md).
+</Info>
+
+## Docker Configuration
+
+### Docker Compose Example
+
+<CodeGroup>
+```yaml Command Mode
+services:
+  whatsapp:
+    image: aldinokemal2104/go-whatsapp-web-multidevice
+    container_name: whatsapp
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - whatsapp:/app/storages
+    command:
+      - rest
+      - --basic-auth=admin:admin
+      - --port=3000
+      - --debug=true
+      - --os=Chrome
+      - --webhook=https://yourapp.com/webhook
+
+volumes:
+  whatsapp:
+```
+
+```yaml Environment Mode
+services:
+  whatsapp:
+    image: aldinokemal2104/go-whatsapp-web-multidevice
+    container_name: whatsapp
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - whatsapp:/app/storages
+    environment:
+      - APP_BASIC_AUTH=admin:admin
+      - APP_PORT=3000
+      - APP_DEBUG=true
+      - APP_OS=Chrome
+      - WHATSAPP_WEBHOOK=https://yourapp.com/webhook
+      - WHATSAPP_WEBHOOK_SECRET=your-secret-key
+      - WHATSAPP_AUTO_MARK_READ=true
+    command:
+      - rest
+
+volumes:
+  whatsapp:
+```
+
+```yaml .env File Mode
+services:
+  whatsapp:
+    image: aldinokemal2104/go-whatsapp-web-multidevice
+    container_name: whatsapp
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - whatsapp:/app/storages
+      - ./src/.env:/app/.env
+    command:
+      - rest
+
+volumes:
+  whatsapp:
+```
+</CodeGroup>
+
+### Docker Run Example
+
+```bash
+docker run -d \
+  --name whatsapp \
+  --restart always \
+  -p 3000:3000 \
+  -v whatsapp:/app/storages \
+  -e APP_DEBUG=true \
+  -e WHATSAPP_WEBHOOK="https://yourapp.com/webhook" \
+  aldinokemal2104/go-whatsapp-web-multidevice \
+  rest --basic-auth=admin:admin
+```
+
+## Complete Configuration Example
+
+```bash
+# Application
+export APP_PORT=3000
+export APP_HOST=0.0.0.0
+export APP_DEBUG=false
+export APP_OS="Production Server"
+export APP_BASIC_AUTH="admin:secret123"
+export APP_BASE_PATH=""
+export APP_TRUSTED_PROXIES="0.0.0.0/0"
+
+# Database
+export DB_URI="file:storages/whatsapp.db?_foreign_keys=on"
+export DB_KEYS_URI="file::memory:?cache=shared&_foreign_keys=on"
+
+# WhatsApp Features
+export WHATSAPP_AUTO_REPLY=""
+export WHATSAPP_AUTO_MARK_READ=false
+export WHATSAPP_AUTO_DOWNLOAD_MEDIA=true
+export WHATSAPP_AUTO_REJECT_CALL=false
+export WHATSAPP_PRESENCE_ON_CONNECT=unavailable
+export WHATSAPP_ACCOUNT_VALIDATION=true
+export WHATSAPP_CHAT_STORAGE=true
+
+# Webhook
+export WHATSAPP_WEBHOOK="https://yourapp.com/webhook"
+export WHATSAPP_WEBHOOK_SECRET="your-super-secret-key"
+export WHATSAPP_WEBHOOK_EVENTS="message,message.ack,group.participants"
+export WHATSAPP_WEBHOOK_INSECURE_SKIP_VERIFY=false
+export WHATSAPP_WEBHOOK_INCLUDE_OUTGOING=false
+
+# Chatwoot (Optional)
+export CHATWOOT_ENABLED=false
+export CHATWOOT_URL=""
+export CHATWOOT_API_TOKEN=""
+export CHATWOOT_ACCOUNT_ID=""
+export CHATWOOT_INBOX_ID=""
+export CHATWOOT_DEVICE_ID=""
+export CHATWOOT_IMPORT_MESSAGES=false
+export CHATWOOT_DAYS_LIMIT_IMPORT_MESSAGES=3
+
+# Start server
+./whatsapp rest
+```
+
+## Configuration Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use .env in Development" icon="laptop-code">
+    Keep configuration in `.env` file for easy local development.
+  </Card>
+  
+  <Card title="Use Environment Variables in Production" icon="server">
+    Set environment variables in systemd service files or container orchestration.
+  </Card>
+  
+  <Card title="Never Commit Secrets" icon="lock">
+    Add `.env` to `.gitignore`. Use `.env.example` as template.
+  </Card>
+  
+  <Card title="Use CLI Flags for Overrides" icon="terminal">
+    Override specific settings temporarily without changing configuration files.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Configuration Not Applied">
+    **Problem:** Changes in `.env` file not taking effect.
+    
+    **Solution:**
+    1. Ensure `.env` file is in the `src/` directory next to the binary
+    2. Restart the application after changing configuration
+    3. Check for environment variables overriding `.env` values
+    4. Enable `--debug=true` to see loaded configuration
+  </Accordion>
+  
+  <Accordion title="Webhook Not Working">
+    **Problem:** Webhook events not being received.
+    
+    **Solution:**
+    1. Verify `WHATSAPP_WEBHOOK` URL is publicly accessible
+    2. Check webhook endpoint returns HTTP 200
+    3. Enable debug mode: `APP_DEBUG=true`
+    4. Check webhook secret matches on both ends
+    5. Test with webhook.site first
+  </Accordion>
+  
+  <Accordion title="Database Connection Failed">
+    **Problem:** Cannot connect to database.
+    
+    **Solution:**
+    1. Ensure `storages/` directory exists and is writable
+    2. For PostgreSQL, verify connection string format
+    3. Check database user has proper permissions
+    4. Enable debug logging to see full error
+  </Accordion>
+</AccordionGroup>
+
+## See Also
+
+- [Sending Messages](/guides/sending-messages) — Message sending configuration
+- [Receiving Messages](/guides/receiving-messages) — Webhook and auto-reply setup
+- [Media Handling](/guides/media-handling) — Media processing settings
+- [GitHub README](https://github.com/aldinokemal/go-whatsapp-web-multidevice#configuration) — Additional configuration details

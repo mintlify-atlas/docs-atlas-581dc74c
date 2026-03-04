@@ -1,0 +1,190 @@
+---
+title: 'API Overview'
+description: 'Introduction to the GOWA WhatsApp API, including base URL, versioning, and common patterns'
+---
+
+## Introduction
+
+The GOWA WhatsApp API is a RESTful HTTP API built on the WhatsApp Web Multi-Device protocol. It provides comprehensive functionality for sending messages, managing groups, handling contacts, and more.
+
+## Base URL
+
+The default base URL for local development is:
+
+```
+http://localhost:3000
+```
+
+For production deployments, configure your server's hostname and port using environment variables:
+
+- `APP_HOST` - Host address to bind the server (default: `0.0.0.0`)
+- `APP_PORT` - Application port (default: `3000`)
+
+### Subpath Deployment
+
+If you need to deploy the API under a specific path (e.g., `/gowa/api`), use the `APP_BASE_PATH` environment variable or `--base-path` flag:
+
+```bash
+./whatsapp rest --base-path="/gowa"
+```
+
+Or with environment variables:
+
+```bash
+APP_BASE_PATH=/gowa ./whatsapp rest
+```
+
+## OpenAPI Specification
+
+The complete API specification is available in OpenAPI 3.0 format:
+
+- **Version**: 8.3.0
+- **Specification File**: [openapi.yaml](https://github.com/aldinokemal/go-whatsapp-web-multidevice/blob/main/docs/openapi.yaml)
+- **Visualize**: Use [Swagger Editor](https://editor.swagger.io) to view the interactive documentation
+- **Generate Clients**: Use [openapi-generator](https://openapi-generator.tech) to generate HTTP clients in your preferred language
+
+## API Versioning
+
+The API follows semantic versioning. The current major version is **v8**, which introduced multi-device support. Breaking changes are documented in the project README under "Breaking Changes".
+
+### Version 8 Major Changes
+
+- **Multi-device support**: Manage multiple WhatsApp accounts simultaneously
+- **Device scoping**: All device-scoped endpoints require device identification
+- **New device management endpoints**: `/devices` for CRUD operations
+- **Enhanced webhook payloads**: All events include `device_id` field
+
+## Common Patterns
+
+### Request Format
+
+All API requests use standard HTTP methods:
+
+- `GET` - Retrieve resources
+- `POST` - Create resources or perform actions
+- `DELETE` - Remove resources
+
+### Response Format
+
+All responses follow a consistent JSON structure:
+
+```json
+{
+  "status": 200,
+  "code": "SUCCESS",
+  "message": "Operation completed successfully",
+  "results": {
+    // Response data here
+  }
+}
+```
+
+#### Success Response Fields
+
+- `status` (integer) - HTTP status code
+- `code` (string) - Application-specific status code (e.g., `SUCCESS`)
+- `message` (string) - Human-readable message
+- `results` (object) - Response data payload
+
+### Phone Number Format
+
+WhatsApp uses JID (Jabber ID) format for phone numbers:
+
+- **Individual chats**: `{country_code}{number}@s.whatsapp.net`
+  - Example: `6289685028129@s.whatsapp.net`
+- **Group chats**: `{group_id}@g.us`
+  - Example: `120363024512399999@g.us`
+- **Newsletter channels**: `{newsletter_id}@newsletter`
+  - Example: `120363144038483540@newsletter`
+
+<Note>
+Always include the full JID format when specifying phone numbers or chat identifiers in API requests.
+</Note>
+
+### Pagination
+
+List endpoints support pagination using `limit` and `offset` query parameters:
+
+```bash
+GET /chats?limit=25&offset=0
+```
+
+Response includes pagination metadata:
+
+```json
+{
+  "results": {
+    "data": [...],
+    "pagination": {
+      "limit": 25,
+      "offset": 0,
+      "total": 150
+    }
+  }
+}
+```
+
+### Media Handling
+
+Media uploads use `multipart/form-data` encoding:
+
+```bash
+curl -X POST http://localhost:3000/send/image \
+  -H "X-Device-Id: my-device" \
+  -F "phone=6289685028129@s.whatsapp.net" \
+  -F "caption=Hello World" \
+  -F "image=@/path/to/image.jpg"
+```
+
+Alternatively, provide a URL:
+
+```json
+{
+  "phone": "6289685028129@s.whatsapp.net",
+  "image_url": "https://example.com/image.jpg",
+  "caption": "Hello World"
+}
+```
+
+### Optional Features
+
+Many endpoints support optional features through boolean flags:
+
+- **Disappearing messages**: `duration` parameter (in seconds)
+  - `86400` - 24 hours
+  - `604800` - 7 days
+  - `7776000` - 90 days
+- **Forwarded messages**: `is_forwarded` boolean flag
+- **View once media**: `view_once` boolean flag (images/videos)
+- **Media compression**: `compress` boolean flag
+
+## Rate Limiting
+
+<Warning>
+While the API doesn't enforce explicit rate limits, WhatsApp's servers may rate-limit or ban accounts that send too many messages in a short period. Implement appropriate delays between messages in production applications.
+</Warning>
+
+## Protocol Foundation
+
+This API is built on the [whatsmeow](https://github.com/tulir/whatsmeow) library, which implements the WhatsApp Web Multi-Device protocol. Some limitations are inherited from WhatsApp's protocol:
+
+- User groups list is capped at 500 groups (WhatsApp protocol limitation)
+- Some operations require the device to be connected and logged in
+- Media processing requires FFmpeg and libwebp
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api/authentication">
+    Learn how to authenticate API requests
+  </Card>
+  <Card title="Device Scoping" icon="mobile" href="/api/device-scoping">
+    Understand multi-device management
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/api/error-handling">
+    Handle errors gracefully
+  </Card>
+  <Card title="Endpoints" icon="server" href="/api/endpoints">
+    Explore available endpoints
+  </Card>
+</CardGroup>

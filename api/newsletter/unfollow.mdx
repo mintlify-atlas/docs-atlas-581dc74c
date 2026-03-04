@@ -1,0 +1,61 @@
+---
+title: 'Unfollow Newsletter'
+openapi: 'POST /newsletter/unfollow'
+---
+
+Unsubscribe from a newsletter (channel) that you are currently following.
+
+<Warning>
+After unfollowing a newsletter, you will no longer receive updates from that channel. You can resubscribe later if the channel is public.
+</Warning>
+
+## Request
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+<ParamField body="newsletter_id" type="string" required>
+  The newsletter ID to unfollow
+  
+  Example: `120363024512399999@newsletter`
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code (e.g., `SUCCESS`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message describing the result
+  
+  Example: `Success`
+</ResponseField>
+
+<ResponseField name="results" type="string">
+  Additional result data (typically null for this endpoint)
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X POST \
+  'https://your-api-domain.com/newsletter/unfollow' \
+  -H 'Content-Type: application/json' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password' \
+  -d '{
+    "newsletter_id": "120363024512399999@newsletter"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "code": "SUCCESS",
+  "message": "Success",
+  "results": null
+}
+```
+</ResponseExample>

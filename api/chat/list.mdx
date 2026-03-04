@@ -1,0 +1,139 @@
+---
+title: 'List Chats'
+openapi: 'GET /chats'
+---
+
+Retrieve a paginated list of chat conversations with filtering and search capabilities.
+
+<Tip>
+Use pagination parameters to efficiently handle large numbers of chats.
+</Tip>
+
+## Request
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="25">
+  Maximum number of chats to return per page (max: 100)
+</ParamField>
+
+<ParamField query="offset" type="integer" default="0">
+  Number of chats to skip for pagination
+</ParamField>
+
+<ParamField query="search" type="string">
+  Search chats by name or phone number
+</ParamField>
+
+<ParamField query="has_media" type="boolean" default="false">
+  Filter to only include chats that contain media messages
+</ParamField>
+
+<ParamField query="archived" type="boolean">
+  Filter by archived status:
+  - `true`: Return only archived chats
+  - `false`: Return only non-archived chats
+  - Omit parameter: Return all chats
+</ParamField>
+
+## Response
+
+<ResponseField name="code" type="string">
+  Response code (e.g., `SUCCESS`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message describing the result
+  
+  Example: `Success get chat list`
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="data" type="array">
+    Array of chat objects
+    
+    <Expandable title="Chat Object">
+      <ResponseField name="jid" type="string">
+        Chat JID identifier
+        
+        Example: `6289685028129@s.whatsapp.net`
+      </ResponseField>
+      
+      <ResponseField name="name" type="string">
+        Chat display name
+      </ResponseField>
+      
+      <ResponseField name="last_message_time" type="string">
+        Timestamp of the last message (ISO 8601 format)
+      </ResponseField>
+      
+      <ResponseField name="ephemeral_expiration" type="integer">
+        Ephemeral message expiration time in seconds (0 = disabled)
+      </ResponseField>
+      
+      <ResponseField name="created_at" type="string">
+        Chat creation timestamp
+      </ResponseField>
+      
+      <ResponseField name="updated_at" type="string">
+        Chat last update timestamp
+      </ResponseField>
+      
+      <ResponseField name="archived" type="boolean">
+        Whether the chat is archived
+      </ResponseField>
+    </Expandable>
+  </ResponseField>
+  
+  <ResponseField name="pagination" type="object">
+    <ResponseField name="limit" type="integer">
+      Number of items per page
+    </ResponseField>
+    
+    <ResponseField name="offset" type="integer">
+      Current offset
+    </ResponseField>
+    
+    <ResponseField name="total" type="integer">
+      Total number of chats
+    </ResponseField>
+  </ResponseField>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X GET \
+  'https://your-api-domain.com/chats?limit=25&offset=0&search=John' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "code": "SUCCESS",
+  "message": "Success get chat list",
+  "results": {
+    "data": [
+      {
+        "jid": "6289685028129@s.whatsapp.net",
+        "name": "John Doe",
+        "last_message_time": "2024-01-15T10:30:00Z",
+        "ephemeral_expiration": 0,
+        "created_at": "2024-01-10T08:00:00Z",
+        "updated_at": "2024-01-15T10:30:00Z",
+        "archived": false
+      }
+    ],
+    "pagination": {
+      "limit": 25,
+      "offset": 0,
+      "total": 150
+    }
+  }
+}
+```
+</ResponseExample>

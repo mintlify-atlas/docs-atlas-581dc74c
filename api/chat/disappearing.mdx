@@ -1,0 +1,105 @@
+---
+title: 'Set Disappearing Messages'
+openapi: 'POST /chat/{chat_jid}/disappearing'
+---
+
+Enable or disable disappearing messages for a chat conversation. When enabled, messages will automatically delete after the specified time period.
+
+<Warning>
+Valid timer values are:
+- `0` - Off (disable disappearing messages)
+- `86400` - 24 hours
+- `604800` - 7 days
+- `7776000` - 90 days
+
+Any other value will result in an error.
+</Warning>
+
+## Request
+
+<ParamField path="chat_jid" type="string" required>
+  Chat JID identifier:
+  - For individual chats: `phone@s.whatsapp.net`
+  - For group chats: `groupid@g.us`
+  
+  Example: `6289685028129@s.whatsapp.net`
+</ParamField>
+
+<ParamField header="X-Device-Id" type="string">
+  Device identifier for multi-device support. Required when multiple devices are registered. If only one device is registered, it will be used as the default.
+</ParamField>
+
+<ParamField body="timer_seconds" type="integer" required>
+  Timer duration in seconds:
+  - `0`: Off (disable disappearing messages)
+  - `86400`: 24 hours
+  - `604800`: 7 days
+  - `7776000`: 90 days
+  
+  Example: `86400`
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="integer">
+  HTTP status code (e.g., `200`)
+</ResponseField>
+
+<ResponseField name="code" type="string">
+  Response code (e.g., `SUCCESS`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Response message describing the result
+  
+  Example: `Disappearing messages set to 86400 seconds`
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  <ResponseField name="status" type="string">
+    Status of the operation
+    
+    Example: `success`
+  </ResponseField>
+  
+  <ResponseField name="message" type="string">
+    Detailed status message
+  </ResponseField>
+  
+  <ResponseField name="chat_jid" type="string">
+    The JID of the affected chat
+  </ResponseField>
+  
+  <ResponseField name="timer_seconds" type="integer">
+    The configured timer value in seconds
+  </ResponseField>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X POST \
+  'https://your-api-domain.com/chat/6289685028129@s.whatsapp.net/disappearing' \
+  -H 'Content-Type: application/json' \
+  -H 'X-Device-Id: my-device' \
+  -u 'username:password' \
+  -d '{
+    "timer_seconds": 86400
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "status": 200,
+  "code": "SUCCESS",
+  "message": "Disappearing messages set to 86400 seconds",
+  "results": {
+    "status": "success",
+    "message": "Disappearing messages set to 86400 seconds",
+    "chat_jid": "6289685028129@s.whatsapp.net",
+    "timer_seconds": 86400
+  }
+}
+```
+</ResponseExample>
